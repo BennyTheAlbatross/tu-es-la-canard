@@ -18,7 +18,7 @@ import pygame
 ASSET_FOLDER = 'assets'
 DUCK_SPEED = 5
 DUCK_SIZE = (50, 50)
-ENEMY_SIZE = (70, 70)
+ENEMY_SIZE = (50, 50)
 
 def load_duck_images():
     duck_front= pygame.image.load(f'{ASSET_FOLDER}\duck_front.png')
@@ -39,16 +39,20 @@ def load_duck_images():
         'right': duck_right,
         'left': duck_left
     }
+
 def load_enemy_images():
     enemy_fire = pygame.image.load(f'{ASSET_FOLDER}\enemy_fire.png')
     enemy_water = pygame.image.load(f'{ASSET_FOLDER}\enemy_water.png')
     enemy_rock = pygame.image.load(f'{ASSET_FOLDER}\enemy_rock.png')
-
-    ennemy_fire = pygame.transform.scale(enemy_fire, ENEMY_SIZE)
+    #scale the images so they can be defined with ENEMY_SIZE
+    enemy_fire = pygame.transform.scale(enemy_fire, ENEMY_SIZE)
+    enemy_water = pygame.transform.scale(enemy_water, ENEMY_SIZE)
+    enemy_rock = pygame.transform.scale(enemy_rock, ENEMY_SIZE)
+    
     return {
         'enemy_fire': enemy_fire,
         'enemy_water': enemy_water,
-        'enemy_rock': enemy_rock,
+        'enemy_rock': enemy_rock
     }
 
 class duck:

@@ -27,10 +27,8 @@ def main():
     background_image = pygame.transform.scale(background_image, (50, 50)) # this will scale
     border_image = pygame.transform.scale(border_image, (50, 50)) # this will scale the border image to the correct size for the game.
 
-
     background = pygame.Surface(screen.get_size())
     background = background.convert()
-    border_image = pygame.image.load(os.path.join(current_dir, 'assets', 'tile_cave.png')).convert()
 
     #draw the image across the entire background, tile it to fill the screen.
     tile_width = background_image.get_width()
@@ -54,15 +52,21 @@ def main():
             background.blit(border_image, (x, y)) # draw the left border
             background.blit(border_image, (800 - border_thickness + x, y)) # draw the right border
 
-
-
     # start clock
     clock = pygame.time.Clock()
     # create one duck at the center of the screen.
     player_duck = duck( 400, 300)
     #create the an enemy
     enemy1 = Enemy(100, 100) # this will create an enemy at the top left corner of the screen.
+    enemy2 = Enemy(700, 500) # this will create an enemy at the bottom right corner of the screen.
 
+    #collision logic, when the duck collises with the enemy, the game should print "game over" and stop loop. 
+    if player_duck.rect.colliderect(enemy1.rect) or player_duck.rect.colliderect(enemy2.rect):
+        print("Game Over")
+        exit() 
+
+    
+ 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -73,12 +77,20 @@ def main():
         keys = pygame.key.get_pressed()
         player_duck.handle_input(keys) # this function should be defined in the duck class
         enemy1.move() # this function should be defined in the enemy class to move the enemy across the screen.
+        enemy2.move() # this will move the second enemy across the screen.
         # draw everything
         screen.blit(background, (0, 0)) 
         screen.blit(player_duck.image, player_duck.rect) # this assumes the duck class has an image and rect attribute for drawing
-        screen.blit(enemy1.image, enemy1.rect) # this assumes the enemy class has an image and rect attribute for drawing
+        screen.blit(enemy1.image, enemy1.rect)
+        screen.blit(enemy2.image, enemy2.rect) # this assumes the enemy class has an image and rect attribute for drawing
         pygame.display.flip()
         clock.tick(60)  # limit to 60 frames per second
+        #collision logic, when the duck collises with the enemy, the game should print "game over" and stop loop. 
+        if player_duck.rect.colliderect(enemy1.rect) or player_duck.rect.colliderect(enemy2.rect):
+            print("Game Over")
+            exit() 
+
+
 
 if __name__ == "__main__": # this is the standard way to run the main function in Python, it checks if the script is being run directly (as the main program) and not imported as a module in another script. If this condition is true, it calls the main() function to start the game. 
     main()
