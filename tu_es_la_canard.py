@@ -7,11 +7,14 @@
 import pygame
 import sys
 import os
-
-from Duck_movments import duck, Enemy
+import Duck_movments
+from Duck_movments import duck, Enemy_fire, Enemy_water 
+import map
 
 # define current dir to link to assests and utilities. use same dir as the script for now.
 current_dir = os.path.dirname(os.path.abspath(__file__))
+
+ASSETS_DIR = 'assets'
 
 def main():
     # srart py game
@@ -51,21 +54,36 @@ def main():
         for x in range(0, border_thickness, cave_width):
             background.blit(border_image, (x, y)) # draw the left border
             background.blit(border_image, (800 - border_thickness + x, y)) # draw the right border
+            
+    lava_tile = pygame.image.load(f"{ASSETS_DIR}/tile_lava.png") # Load the lava tile image using pygame's image loading function.
+    lava_tile = pygame.transform.scale(lava_tile, (50, 50)) # Scale the lava tile image to the correct size for the game.
+    barriers = []
+    Duck_movments.barriers = barriers # this will allow us to use the barriers list in the duck class for collision detection.
+    #add the borders to the barrier list, so the duck can collide with them.
+    barriers.append(pygame.Rect(0, 0, 800, border_thickness)) # top border
+    barriers.append(pygame.Rect(0, 600 - border_thickness, 800, border_thickness)) # bottom border
+    barriers.append(pygame.Rect(0, 0, border_thickness, 600)) # left border
+    barriers.append(pygame.Rect(800 - border_thickness, 0, border_thickness, 600)) # right border
+    lava = map.create_obstacles() # this will create the lava obstacles using the create_obstacles function from the map module.
+    barriers.extend(map.create_obstacles())
+
+    for block in lava:
+        for x in range(block.left, block.right, 50):
+            for y in range(block.top, block.bottom, 50):
+                screen.blit(lava_tile, (x, y))
+
+    
+
 
     # start clock
     clock = pygame.time.Clock()
     # create one duck at the center of the screen.
     player_duck = duck( 400, 300)
-    #create the an enemy
-    enemy1 = Enemy(100, 100) # this will create an enemy at the top left corner of the screen.
-    enemy2 = Enemy(700, 500) # this will create an enemy at the bottom right corner of the screen.
+    #create the an enemy list
+    enemy1 = Enemy_fire(100, 100) # thes will create an enemy at the top left corner of the screen.
+    enemy2 = Enemy_water(700, 500) # this will create an enemy at the bottom right corner of the screen.
 
-    #collision logic, when the duck collises with the enemy, the game should print "game over" and stop loop. 
-    if player_duck.rect.colliderect(enemy1.rect) or player_duck.rect.colliderect(enemy2.rect):
-        print("Game Over")
-        exit() 
-
-    
+    enemy_list = [enemy1,enemy2]
  
     while True:
         for event in pygame.event.get():
@@ -76,21 +94,22 @@ def main():
         # move the duck with arrow keys and change the sprite to the correct direction.
         keys = pygame.key.get_pressed()
         player_duck.handle_input(keys) # this function should be defined in the duck class
-        enemy1.move() # this function should be defined in the enemy class to move the enemy across the screen.
-        enemy2.move() # this will move the second enemy across the screen.
+        #call enemys in list and activate them. 
+        for enemy in enemy_list:
+            enemy.move() 
+        
         # draw everything
         screen.blit(background, (0, 0)) 
         screen.blit(player_duck.image, player_duck.rect) # this assumes the duck class has an image and rect attribute for drawing
-        screen.blit(enemy1.image, enemy1.rect)
-        screen.blit(enemy2.image, enemy2.rect) # this assumes the enemy class has an image and rect attribute for drawing
+        for enemy in enemy_list:
+            screen.blit(enemy.image, enemy.rect)
         pygame.display.flip()
         clock.tick(60)  # limit to 60 frames per second
-        #collision logic, when the duck collises with the enemy, the game should print "game over" and stop loop. 
-        if player_duck.rect.colliderect(enemy1.rect) or player_duck.rect.colliderect(enemy2.rect):
-            print("Game Over")
-            exit() 
-
-
+        #collision logic, when the duck collises with the enemy from enemy list , the game should print "game over" and stop loop. 
+        for enemy in enemy_list:
+            if player_duck.rect.colliderect(enemy.rect): # this will check if the duck collides with any enemy in the enemy list.
+                print(" GAME OVER ")
+                exit()
 
 if __name__ == "__main__": # this is the standard way to run the main function in Python, it checks if the script is being run directly (as the main program) and not imported as a module in another script. If this condition is true, it calls the main() function to start the game. 
     main()

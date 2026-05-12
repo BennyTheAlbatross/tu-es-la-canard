@@ -19,6 +19,7 @@ ASSET_FOLDER = 'assets'
 DUCK_SPEED = 5
 DUCK_SIZE = (50, 50)
 ENEMY_SIZE = (50, 50)
+ENEMY_SIZE_WATER = (60, 60)
 
 def load_duck_images():
     duck_front= pygame.image.load(f'{ASSET_FOLDER}\duck_front.png')
@@ -46,7 +47,7 @@ def load_enemy_images():
     enemy_rock = pygame.image.load(f'{ASSET_FOLDER}\enemy_rock.png')
     #scale the images so they can be defined with ENEMY_SIZE
     enemy_fire = pygame.transform.scale(enemy_fire, ENEMY_SIZE)
-    enemy_water = pygame.transform.scale(enemy_water, ENEMY_SIZE)
+    enemy_water = pygame.transform.scale(enemy_water, ENEMY_SIZE_WATER)
     enemy_rock = pygame.transform.scale(enemy_rock, ENEMY_SIZE)
     
     return {
@@ -54,7 +55,7 @@ def load_enemy_images():
         'enemy_water': enemy_water,
         'enemy_rock': enemy_rock
     }
-
+barriers = []
 class duck:
     def __init__(self, x, y):
         self.images = load_duck_images()
@@ -77,19 +78,30 @@ class duck:
         if direction == 'up':
             self.rect.y -= self.speed
             self.image = self.images['back']
+            for barrier in barriers:
+                if self.rect.colliderect(barrier):
+                    self.rect.top = barrier.bottom
         elif direction == 'down':
             self.rect.y += self.speed
             self.image = self.images['front']
+            for barrier in barriers:
+                if self.rect.colliderect(barrier):
+                    self.rect.bottom = barrier.top
         elif direction == 'right':
             self.rect.x += self.speed
             self.image = self.images['right']
+            for barrier in barriers:
+                if self.rect.colliderect(barrier):
+                    self.rect.right =barrier.left
         elif direction == 'left':
             self.rect.x -= self.speed
             self.image = self.images['left']
-
+            for barrier in barriers:
+                if self.rect.colliderect(barrier):
+                    self.rect.left =barrier.right
 
 #define class enemy  just use a square as a place holder. 
-class Enemy:
+class Enemy_fire:
     def __init__(self, x, y):
         self.images = load_enemy_images()# Load the enemy image using the load_enemy_images function.
         self.image = self.images['enemy_fire']
@@ -104,3 +116,21 @@ class Enemy:
             self.direction = -1  # Change direction to right
         if self.rect.right < 0:
             self.direction = 1  # Change direction to left
+
+
+class Enemy_water:
+    def __init__(self, x, y):
+        self.images = load_enemy_images()# Load the enemy image using the load_enemy_images function.
+        self.image = self.images['enemy_water']
+        self.rect = self.image.get_rect(center =(x, y))
+        self.speed = 2
+        self.type = 'water'
+        self.direction = 1  # 1 for right, -1 for left
+    
+    def move(self):
+        self.rect.x += self.speed  * self.direction # Move the enemy to the right
+        if self.rect.left > 800:  # If the enemy goes off the screen, reset its position self.direction = -1  # Change direction to left if self.rect.right < 0:  # If the enemy goes off the screen, reset its position
+            self.direction = -1  # Change direction to right
+        if self.rect.right < 0:
+            self.direction = 1  # Change direction to left
+
