@@ -99,7 +99,12 @@ def main():
             enemy.move() 
         
         # draw everything
-        screen.blit(background, (0, 0)) 
+        screen.blit(background, (1, 0)) 
+#        for block in lava:
+#            for x in range(block.left, block.right, 50):
+#                for y in range(block.top, block.bottom, 50):
+#                    screen.blit(lava_tile, (x, y))
+
         screen.blit(player_duck.image, player_duck.rect) # this assumes the duck class has an image and rect attribute for drawing
         for enemy in enemy_list:
             screen.blit(enemy.image, enemy.rect)
@@ -113,3 +118,4 @@ def main():
 
 if __name__ == "__main__": # this is the standard way to run the main function in Python, it checks if the script is being run directly (as the main program) and not imported as a module in another script. If this condition is true, it calls the main() function to start the game. 
     main()
+

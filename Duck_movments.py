@@ -56,6 +56,8 @@ def load_enemy_images():
         'enemy_rock': enemy_rock
     }
 barriers = []
+revealed_blocks = []
+
 class duck:
     def __init__(self, x, y):
         self.images = load_duck_images()
@@ -81,24 +83,28 @@ class duck:
             for barrier in barriers:
                 if self.rect.colliderect(barrier):
                     self.rect.top = barrier.bottom
+                    revealed_blocks.append(barrier) # this will add the barrier to the revealed blocks list, so it can be drawn in the main loop.
         elif direction == 'down':
             self.rect.y += self.speed
             self.image = self.images['front']
             for barrier in barriers:
                 if self.rect.colliderect(barrier):
                     self.rect.bottom = barrier.top
+                    revealed_blocks.append(barrier) 
         elif direction == 'right':
             self.rect.x += self.speed
             self.image = self.images['right']
             for barrier in barriers:
                 if self.rect.colliderect(barrier):
                     self.rect.right =barrier.left
+                    revealed_blocks.append(barrier)
         elif direction == 'left':
             self.rect.x -= self.speed
             self.image = self.images['left']
             for barrier in barriers:
                 if self.rect.colliderect(barrier):
                     self.rect.left =barrier.right
+                    revealed_blocks.append(barrier)
 
 #define class enemy  just use a square as a place holder. 
 class Enemy_fire:
