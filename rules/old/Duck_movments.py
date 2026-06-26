@@ -138,5 +138,20 @@ class Enemy_water:
         if self.rect.left > 800:  # If the enemy goes off the screen, reset its position self.direction = -1  # Change direction to left if self.rect.right < 0:  # If the enemy goes off the screen, reset its position
             self.direction = -1  # Change direction to right
         if self.rect.right < 0:
-            self.direction = 1  # Change direction to left
+            self.direction = 1 #change to right 
 
+class Enemy_rock:
+    def __init__(self, x, y):
+        self.images = load_enemy_images()# Load the enemy image using the load_enemy_images function.
+        self.image = self.images['enemy_rock']
+        self.rect = self.image.get_rect(center =(x, y))
+        self.speed = 2
+        self.type = 'rock' 
+        self.direction = 1  # 1 for right, -1 for left
+    
+    def move(self):
+        self.rect.y += self.speed  * self.direction # Move the enemy to the right
+        if self.rect.top > 600:  # If the enemy goes off the screen, reset its position self.direction = -1  # Change direction to left if self.rect.right < 0:  # If the enemy goes off the screen, reset its position
+            self.direction = -1  # Change direction to right
+        if self.rect.bottom < 0:
+            self.direction = 1

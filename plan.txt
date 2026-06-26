@@ -1,0 +1,75 @@
+# tu es la canard 
+
+'''
+a dungon puzzle explorere, where you the duck enter hell and battle deamons. 
+a map and level build framework implimented in python & and clickly clickly excel. 
+'''
+
+
+## dir structure and plan 
+
+home/ 
+|---maps/
+|   |--- game/
+|       |--- map1.csv       #containers raw level configuration WORLD STATE
+|   |---Source/ 
+|       |--- map1.ods      # map editor source file.
+|
+
+|---rules/ 
+        1. sprites (functions?)
+            load_duck_images
+            load_enemy_images
+            load_enviromental_images
+
+        2.Movments (class?)                # this defines the class and movment of each object 
+            duck 
+            Enemy_fire
+            Enemy_water
+            Enemy_rock 
+            barriers? 
+
+        3. interactions             # defines splaye rinteractions 
+            barrier
+            enemies
+            gems                # (1.5)
+            buffed_enemy        # enemy interaction with gem powerup 
+            breakablewall (v2)  # switches closed or open barriers 
+            pick (v2)           # 
+
+|---runtime/
+
+        4 gameplay                      #gameplayloop  
+            import csv, sprints, movement , interactions, 
+            cand variable LEVEL 
+            draws the entier function and set up. 
+            this is basicly main. 
+
+        5. menu                         # the menu flow and call to 4
+            lobby
+            level selector  defines LEVEL
+            win screen
+            lossscreen 
+            checks 7settings
+            if __main__ =="__main__"
+                main 
+|
+|6. launcher.py                         
+|    littraly just calls 5. 
+|
+|7 settings 
+
+|---runtime/
+|   |--- main_menu.py       # menu screen/ death screen/ level picker. 
+|   |--- score_timer.py     # clock timer, some kind of higher score per level. 
+|   |--- scores.csv         # saves highscore data
+|   |--- main.py            # Master script.  
+|
+|---launcher.py             # Main urnnng script
+|---settings.somthing       # Define input and screen size.  
+|---README.MD               # repo instructions/ plan / this doc 
+
+
+
+
+

@@ -1,0 +1,11 @@
+object_number,object_name,object_type_code,object_type,object_class,solid,movement,kills_player,ability_rule,sprite
+0,background,0,background,,no,no,no,,
+1,border,1,barrier,border,yes,no,no,,
+2,lava,2,barrier,lava,yes,no,no,,
+3,enemy_fire,3,enemy,fire,no,enemy_movement,yes,,
+4,enemy_water,4,enemy,water,no,enemy_movement,yes,,
+5,enemy_rock,5,enemy,rock,yes,enemy_movement,yes,,
+6,gem_emerald,6,gem,emerald,no,no,no,collect_powerup_kills_fire,
+7,gem_ruby,7,gem,ruby,no,no,no,collect_powerup_kills_water,
+8,gem_sapphire,8,gem,sapphire,no,no,no,collect_powerup_kills_rock,
+

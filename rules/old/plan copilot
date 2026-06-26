@@ -1,0 +1,42 @@
+## Plan: Menu-Led Runtime Flow
+
+Adopt your chosen flow: menu selects level and calls gameplay directly. Gameplay never asks for level selection and only runs the given level.
+
+**Steps**
+1. Keep `rules/` as pure game logic:
+- `sprites.py`: image loading/scaling/cache
+- `movement.py`: duck/enemy movement updates
+- `interactions.py`: collisions, gems, enemy outcomes
+2. Define runtime ownership clearly:
+- `menu.py` owns lobby, level picker, win/lose UI
+- `gameplay.py` owns only update/draw loop for a provided level
+3. Set strict call direction:
+- `menu.py` -> `gameplay.run(level_id_or_path, settings)`
+- `gameplay.py` does not import menu internals and does not request level
+4. Keep launcher minimal:
+- `launcher.py` boots app and enters `menu.main()` only
+- menu internally decides when to start/restart gameplay
+5. Keep settings centralized in `settings.py`:
+- screen size, keybinds, fps, tile size, audio toggles
+6. Keep v2 interactions as placeholders:
+- `breakable_wall` and `pick` stubs in `interactions.py`
+
+**Relevant files**
+- c:/Users/BennyBostock/Documents/tu_es_la_canard/rules/Duck_movments.py — split into `sprites.py` and `movement.py`
+- c:/Users/BennyBostock/Documents/tu_es_la_canard/scripts/main_menu.py — becomes the owner of level selection and gameplay launch
+- c:/Users/BennyBostock/Documents/tu_es_la_canard/scripts/tu_es_la_canard.py — becomes `gameplay.run(level)` style module
+- c:/Users/BennyBostock/Documents/tu_es_la_canard/rules/objects.csv — metadata source for entity construction/interactions
+- c:/Users/BennyBostock/Documents/tu_es_la_canard/maps/game/map1.csv — level data input
+- c:/Users/BennyBostock/Documents/tu_es_la_canard/rules/plan.txt — architecture notes to sync
+
+**Verification**
+1. App starts in menu and displays level picker.
+2. Selecting a level starts gameplay with that exact level.
+3. Gameplay runs without querying menu.
+4. Win/lose returns control to menu for next selection/retry.
+5. Sprite load happens on startup/scene load, not per frame.
+
+**Decisions**
+- Accepted: menu calls gameplay and passes level.
+- Rejected for now: launcher-owned scene router.
+- Keep score/timer out of scope for this iteration.

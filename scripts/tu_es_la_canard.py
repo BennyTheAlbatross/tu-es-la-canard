@@ -1,19 +1,19 @@
 # you are the duck.
 # Tu es le canard.
-'''remembering a game from you youth, you were a duck (or you hade to kill the duck, not sure), hunt for gems, 2d game. 
-''' 
+'''remembering a game from you youth, you were a duck (or you hade to kill the duck, not sure), hunt for gems, 2d game. ''' 
 # author: benny 
 
 import pygame
 import sys
 import os
 import Duck_movments
-from Duck_movments import duck, Enemy_fire, Enemy_water 
+from Duck_movments import duck, Enemy_fire, Enemy_water, Enemy_rock
 import map
+from map import create_obstacles 
+
 
 # define current dir to link to assests and utilities. use same dir as the script for now.
 current_dir = os.path.dirname(os.path.abspath(__file__))
-
 ASSETS_DIR = 'assets'
 
 def main():
@@ -44,7 +44,7 @@ def main():
     border_thickness = 40
     cave_width = border_image.get_width()
     cave_height = border_image.get_height()
-
+    
     for x in range(0, 800, cave_width):
         for y in range(0, border_thickness, cave_height):
             background.blit(border_image, (x, y)) # draw the top border
@@ -64,26 +64,21 @@ def main():
     barriers.append(pygame.Rect(0, 600 - border_thickness, 800, border_thickness)) # bottom border
     barriers.append(pygame.Rect(0, 0, border_thickness, 600)) # left border
     barriers.append(pygame.Rect(800 - border_thickness, 0, border_thickness, 600)) # right border
+    #barriers.append(pygame.Rect(map.create_obstacles))
     lava = map.create_obstacles() # this will create the lava obstacles using the create_obstacles function from the map module.
     barriers.extend(map.create_obstacles())
+    barriers.extend(lava)
 
-    for block in lava:
-        for x in range(block.left, block.right, 50):
-            for y in range(block.top, block.bottom, 50):
-                screen.blit(lava_tile, (x, y))
-
-    
-
-
-    # start clock
+    # start clock:
     clock = pygame.time.Clock()
     # create one duck at the center of the screen.
     player_duck = duck( 400, 300)
     #create the an enemy list
     enemy1 = Enemy_fire(100, 100) # thes will create an enemy at the top left corner of the screen.
     enemy2 = Enemy_water(700, 500) # this will create an enemy at the bottom right corner of the screen.
+    enemy3 = Enemy_rock(300, 250) # this enemy is somewhere in the middel. 
 
-    enemy_list = [enemy1,enemy2]
+    enemy_list = [enemy1,enemy2, enemy3]
  
     while True:
         for event in pygame.event.get():
@@ -100,14 +95,19 @@ def main():
         
         # draw everything
         screen.blit(background, (1, 0)) 
-#        for block in lava:
-#            for x in range(block.left, block.right, 50):
-#                for y in range(block.top, block.bottom, 50):
-#                    screen.blit(lava_tile, (x, y))
+        #for block in lava:
+         #   for x in range(block.left, block.right, 50):
+          #      for y in range(block.top, block.bottom, 50):
+           #         screen.blit(lava_tile, (x, y))
+
 
         screen.blit(player_duck.image, player_duck.rect) # this assumes the duck class has an image and rect attribute for drawing
         for enemy in enemy_list:
             screen.blit(enemy.image, enemy.rect)
+
+        #for block in lava:
+        #    screen.blit(lava,lava.rect)
+
         pygame.display.flip()
         clock.tick(60)  # limit to 60 frames per second
         #collision logic, when the duck collises with the enemy from enemy list , the game should print "game over" and stop loop. 
@@ -118,4 +118,3 @@ def main():
 
 if __name__ == "__main__": # this is the standard way to run the main function in Python, it checks if the script is being run directly (as the main program) and not imported as a module in another script. If this condition is true, it calls the main() function to start the game. 
     main()
-
