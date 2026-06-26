@@ -19,9 +19,9 @@ from rules import interactions
 
 
 #constants 
-HOME_DIR = F'{CURRENT_DIR}\\..'
-map_file = f'{HOME_DIR}\\maps\\game\\map1.csv'
-rules_file = f'{HOME_DIR}\\rules\\objects.csv'
+HOME_DIR = os.path.dirname(CURRENT_DIR)
+map_file = os.path.join(HOME_DIR, 'maps', 'game', 'map2.csv')
+rules_file = os.path.join(HOME_DIR, 'rules', 'objects.csv')
 #but this must be able tto be over written my the menu, but fiene for now.
 screen_width = 800
 screen_height = 600
