@@ -1,10 +1,10 @@
 import pygame
 import os 
-try:
-    from .movments import duck
-except ImportError:
-    from movments import duck
 
+
+from .sprits import TILE_SIZE 
+
+tile_size = TILE_SIZE  # Use the TILE_SIZE constant from sprits.py
 
 rules_dir = os.path.dirname(os.path.abspath(__file__))
 objects_file = f'{rules_dir}\\objects.csv'
@@ -21,7 +21,7 @@ def barrier(player, barriers):
         else:
             # tuple format from your build_world: (x, y, name)
             x, y, _name = b
-            rect = pygame.Rect(x, y, 50, 50)
+            rect = pygame.Rect(x, y, tile_size[0], tile_size[1])
 
         if player_rect.colliderect(rect):
             # Simple resolution: push player out based on overlap
@@ -43,6 +43,21 @@ def barrier(player, barriers):
 
     return player
 
+def _is_hard_barrier(barrier):
+    # Implement your logic to determine if a barrier is hard
+    if isinstance(barrier, tuple) and len(barrier) == 3:
+        return barrier[2] in ('border', 'rock')
+    return False
+    
+def _barrier_rect(barrier):
+    if isinstance(barrier, pygame.Rect):
+        return barrier
+    if isinstance(barrier, tuple) and len(barrier) >= 2:
+        x, y, _name = barrier
+        return pygame.Rect(x, y, tile_size[0], tile_size[1])
+    return None
+
+      # Assuming the third element indicates hardness
 def enemy(player, enemies):
     # Return alive flag + optional hit enemy
     # enemies can be objects with .rect OR tuples (x, y, name)
@@ -50,8 +65,7 @@ def enemy(player, enemies):
         if hasattr(e, "rect"):
             enemy_rect = e.rect
         else:
-            x, y, _name = e
-            enemy_rect = pygame.Rect(x, y, 50, 50)
+            enemy_rect = _barrier_rect(e)
 
         if player.rect.colliderect(enemy_rect):
             return False, e
@@ -68,8 +82,8 @@ def gem(player, gems):
             gem_rect = g.rect
             gem_name = getattr(g, "name", "gem")
         else:
-            x, y, gem_name = g
-            gem_rect = pygame.Rect(x, y, 50, 50)
+            gem_rect = _barrier_rect(g)
+            gem_name = g[2] if g else "gem"
 
         if player.rect.colliderect(gem_rect):
             collected.append(gem_name)
@@ -77,6 +91,19 @@ def gem(player, gems):
             remaining.append(g)
 
     return remaining, collected
+
+
+def door(player, doors, is_open):
+    # Level completes only when door is open and player reaches it.
+    if not is_open:
+        return False
+
+    for d in doors:
+        door_rect = _barrier_rect(d)
+        if door_rect and player.rect.colliderect(door_rect):
+            return True
+
+    return False
 
 
 

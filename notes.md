@@ -1,2 +1,10 @@
+    things to impliment :w
 
-#you find walls as you bumo in to them. 
+    menu/ win loss. 
+
+    camera trcking. 
+    enemies also collide with brick walls.? 
+    shrink pixel size, optmise for handheld. 
+    env types, ice? lava? rock? mixed <-- level ideas?
+    transparent player imageins and animation cycle? 
+    build a real level. 

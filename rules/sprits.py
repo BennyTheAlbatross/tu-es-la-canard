@@ -6,7 +6,7 @@ RULES_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(RULES_DIR)
 ASSET_FOLDER = os.path.join(PROJECT_DIR, 'assets')
 DUCK_SPEED = 5
-TILE_SIZE = (50, 50)
+TILE_SIZE = (30, 30)
 
 
 def _first_existing(candidates):
@@ -57,28 +57,45 @@ def load_enviromental_images():
     background_image = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_dirt.png'))
     border_image = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_cave.png'))
     lava_tile = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_lava.png'))
+    water_tile = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_water.png'))
+    stone_tile = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_stone.png'))
+    wood_tile = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_wood.png'))
 
 #now scale the images to the correct size for the game.
     background_image = pygame.transform.scale(background_image, TILE_SIZE) # this will scale
     border_image = pygame.transform.scale(border_image, TILE_SIZE) # this will scale the border image to the correct size for the game.
     lava_tile = pygame.transform.scale(lava_tile, TILE_SIZE) # Scale the lava tile image to the correct size for the game.
+    water_tile = pygame.transform.scale(water_tile, TILE_SIZE) # Scale the water tile image to the correct size for the game.i
+    stone_tile = pygame.transform.scale(stone_tile, TILE_SIZE) # Scale the stone tile image to the correct size for the game.
+    wood_tile = pygame.transform.scale(wood_tile, TILE_SIZE) # Scale the wood tile image to the correct size for the game.
+
 
     return {
         'background_image': background_image,
         'border_image': border_image,
-        'lava_tile': lava_tile}
+        'lava_tile': lava_tile,
+        'water_tile': water_tile,
+        'stone_tile': stone_tile,
+        'wood_tile': wood_tile
+        }
 
 def load_object_images():
     gem_emeral = pygame.image.load(_first_existing(['gem_emeral.png', 'gem_emerald.png', 'gem_green.png']))
     gem_ruby = pygame.image.load(_first_existing(['gem_ruby.png', 'gem_red.png']))
     gem_sapphire = pygame.image.load(_first_existing(['gem_sapphire.png', 'gem_blue.png', 'gem_green.png']))
+    door_closed = pygame.image.load(_first_existing(['door_closed.png', 'door_part_01.png']))
+    door_open = pygame.image.load(_first_existing(['door_open.png', 'door_part_02.png', 'door_part_01.png']))
 
     gem_emeral = pygame.transform.scale(gem_emeral, TILE_SIZE) # Scale the blue gem image to the correct size for the game.
     gem_ruby = pygame.transform.scale(gem_ruby, TILE_SIZE) # Scale the red gem image to the correct size for the game.
     gem_sapphire = pygame.transform.scale(gem_sapphire, TILE_SIZE) # Scale the blue gem image to the correct size for the game.
+    door_closed = pygame.transform.scale(door_closed, TILE_SIZE)
+    door_open = pygame.transform.scale(door_open, TILE_SIZE)
 
     return {
         'gem_emeral': gem_emeral,
         'gem_ruby': gem_ruby,
-        'gem_sapphire': gem_sapphire
+        'gem_sapphire': gem_sapphire,
+        'door_closed': door_closed,
+        'door_open': door_open,
         } 

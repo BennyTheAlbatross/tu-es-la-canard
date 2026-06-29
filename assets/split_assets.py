@@ -1,8 +1,10 @@
 
 from pathlib import Path
 from PIL import Image
+from collections import deque
 
 SOURCE_IMAGE = "assets.png"
+DOOR_SOURCE_IMAGE = "doors.png"
 OUTPUT_DIR = Path("split_assets")
 
 # Approximate crop rectangles from the generated sheet:
@@ -72,6 +74,96 @@ def trim_black(im, threshold=10, padding=2):
     return rgba.crop((left, top, right, bottom))
 
 
+def _find_components(im, threshold=10, min_area=3000):
+    """Return bounding boxes for non-black connected components."""
+    rgba = im.convert("RGBA")
+    px = rgba.load()
+    w, h = rgba.size
+    visited = bytearray(w * h)
+    boxes = []
+
+    for y in range(h):
+        for x in range(w):
+            idx = y * w + x
+            if visited[idx]:
+                continue
+
+            r, g, b, a = px[x, y]
+            if a == 0 or (r <= threshold and g <= threshold and b <= threshold):
+                visited[idx] = 1
+                continue
+
+            queue = deque([(x, y)])
+            visited[idx] = 1
+            min_x = max_x = x
+            min_y = max_y = y
+            area = 0
+
+            while queue:
+                cx, cy = queue.popleft()
+                area += 1
+                min_x = min(min_x, cx)
+                max_x = max(max_x, cx)
+                min_y = min(min_y, cy)
+                max_y = max(max_y, cy)
+
+                for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                    if nx < 0 or ny < 0 or nx >= w or ny >= h:
+                        continue
+                    nidx = ny * w + nx
+                    if visited[nidx]:
+                        continue
+
+                    rr, gg, bb, aa = px[nx, ny]
+                    if aa == 0 or (rr <= threshold and gg <= threshold and bb <= threshold):
+                        visited[nidx] = 1
+                        continue
+
+                    visited[nidx] = 1
+                    queue.append((nx, ny))
+
+            if area >= min_area:
+                boxes.append((min_x, min_y, max_x + 1, max_y + 1, area))
+
+    return boxes
+
+
+def split_doors():
+    """Split doors.png into parts and write door_closed/door_open aliases."""
+    source = Path(DOOR_SOURCE_IMAGE)
+    if not source.exists():
+        print(f"Skipped door split: {DOOR_SOURCE_IMAGE!r} not found")
+        return
+
+    image = Image.open(source).convert("RGBA")
+    boxes = _find_components(image, threshold=10, min_area=3000)
+    if not boxes:
+        print("No large door components found in doors.png")
+        return
+
+    # Stable ordering for predictable filenames.
+    boxes.sort(key=lambda b: (b[1], b[0]))
+    parts = []
+    for idx, (left, top, right, bottom, _area) in enumerate(boxes, start=1):
+        cropped = image.crop((left, top, right, bottom))
+        trimmed = trim_black(cropped)
+        out_path = Path(f"door_part_{idx:02d}.png")
+        trimmed.save(out_path)
+        parts.append(out_path)
+        print(f"Saved {out_path}")
+
+    # Use the first two parts as gameplay aliases.
+    if parts:
+        Image.open(parts[0]).save("door_closed.png")
+        print("Saved door_closed.png")
+    if len(parts) > 1:
+        Image.open(parts[1]).save("door_open.png")
+        print("Saved door_open.png")
+    elif parts:
+        Image.open(parts[0]).save("door_open.png")
+        print("Saved door_open.png (fallback copy of closed)")
+
+
 def main():
     source = Path(SOURCE_IMAGE)
     if not source.exists():
@@ -92,6 +184,9 @@ def main():
         print(f"Saved {out_path}")
 
     print(f"\nDone. Assets saved to: {OUTPUT_DIR.resolve()}")
+
+    # Also split door assets if doors.png exists.
+    split_doors()
 
 
 if __name__ == "__main__":
