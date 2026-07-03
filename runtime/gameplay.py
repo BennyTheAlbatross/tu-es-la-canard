@@ -22,9 +22,9 @@ from rules import interactions
 
 #constants 
 HOME_DIR = os.path.dirname(CURRENT_DIR)
-map_file = os.path.join(HOME_DIR, 'maps', 'game', 'map2.csv')
+DEFAULT_MAP = os.path.join(HOME_DIR, 'maps', 'game', 'map4.csv')
 rules_file = os.path.join(HOME_DIR, 'rules', 'objects.csv')
-#but this must be able tto be over written my the menu, but fiene for now.
+#map_file is passed into main()/build_world() so the menu can pick the level.
 screen_width = 800
 screen_height = 400
 
@@ -71,7 +71,7 @@ def load_objects():
         return by_id
 
 #define build worlds from the map
-def build_world(object_defs):
+def build_world(object_defs, map_file):
     background = []
     barriers = []
     enemies = []
@@ -202,7 +202,7 @@ def draw_world(screen, static_world, enemies, gems, doors, door_open, player, ob
     screen.blit(player.image, (player.rect.x - camera_x, player.rect.y - camera_y))
 
 
-def main():
+def main(map_file=DEFAULT_MAP):
     pygame.init()
 
     duck_images = load_duck_images()
@@ -215,7 +215,7 @@ def main():
 
     object_defs = load_objects()
     movments.configure_enemy_collision_rules(object_defs)
-    background, barriers, enemies, gems, doors, player_spawns, world_width, world_height = build_world(object_defs)
+    background, barriers, enemies, gems, doors, player_spawns, world_width, world_height = build_world(object_defs, map_file)
     static_world = build_static_world_surface(world_width, world_height, background, barriers, env_images)
 
     if player_spawns:
@@ -232,8 +232,7 @@ def main():
         # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                return 'quit'
 
         # Handle user input
         keys = pygame.key.get_pressed()
@@ -251,8 +250,7 @@ def main():
         alive, _hit_enemy = interactions.enemy(player, enemies)
         if not alive:
             print("GAME OVER")
-            pygame.quit()
-            sys.exit()
+            return 'dead'
         gems, _collected = interactions.gem(player, gems)
 
         # Recompute after collecting gems this frame so door opens immediately.
@@ -260,8 +258,7 @@ def main():
         level_complete = interactions.door(player, doors, door_is_open)
         if level_complete:
             print("LEVEL COMPLETE")
-            pygame.quit()
-            sys.exit()
+            return 'won'
 
         # Update camera position to follow the player
         camera_x = player.rect.centerx - screen_width // 2

@@ -31,6 +31,11 @@ def load_duck_images():
     duck_right = pygame.transform.scale(duck_right, TILE_SIZE)
     duck_left = pygame.transform.scale(duck_left, TILE_SIZE)
 
+    duck_front.set_colorkey((0,0,0))  
+    duck_back.set_colorkey((0,0,0)) 
+    duck_right.set_colorkey((0,0,0))
+    duck_left.set_colorkey((0,0,0))
+
     return {
         'front': duck_front,
         'back': duck_back,
@@ -91,7 +96,11 @@ def load_object_images():
     gem_sapphire = pygame.transform.scale(gem_sapphire, TILE_SIZE) # Scale the blue gem image to the correct size for the game.
     door_closed = pygame.transform.scale(door_closed, TILE_SIZE)
     door_open = pygame.transform.scale(door_open, TILE_SIZE)
+    
+    door_closed.set_colorkey((0,0,0))
+    door_open.set_colorkey((0,0,0))
 
+    
     return {
         'gem_emeral': gem_emeral,
         'gem_ruby': gem_ruby,
