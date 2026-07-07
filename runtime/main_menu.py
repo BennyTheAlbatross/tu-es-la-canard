@@ -9,7 +9,7 @@ if PROJECT_DIR not in sys.path:
 
 import gameplay
 from gameplay import screen_width, screen_height
-from rules.sprits import TILE_SIZE, ASSET_FOLDER
+from rules.sprits import TILE_SIZE, ASSET_FOLDER, load_torch_images
 
 
 MAPS_DIR = os.path.join(PROJECT_DIR, 'maps', 'game')
@@ -22,6 +22,7 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 
 font = pygame.font.Font(None, 36)
 title_font = pygame.font.Font(None, 64)
+torch_frames = load_torch_images()['torch']
 
 
 def draw_text(text, font, color, surface, x, y, center=False):
@@ -56,6 +57,14 @@ def draw_menu(title, options, selected):
         ),
         (0, 0),
     )
+
+    # Decorative torches for the main menu.
+    torch_y = 92
+    torch_frame = pygame.time.get_ticks() // 180 % len(torch_frames)
+    left_torch = torch_frames[torch_frame]
+    right_torch = pygame.transform.flip(left_torch, True, False)
+    screen.blit(left_torch, (70, torch_y))
+    screen.blit(right_torch, (screen_width - 70 - right_torch.get_width(), torch_y))
 
     draw_text(title, title_font, (255, 0, 0), screen, screen_width // 2, 60, center=True)
 
@@ -95,6 +104,67 @@ def death_screen(last_map):
             else:
                 color = (255, 255, 255)
                 label = option
+
+            draw_text(label, font, color, screen, screen_width // 2, start_y + i * 40, center=True)
+
+        torch_y = 92
+        torch_frame = pygame.time.get_ticks() // 180 % len(torch_frames)
+        left_torch = torch_frames[torch_frame]
+        right_torch = pygame.transform.flip(left_torch, True, False)
+        screen.blit(left_torch, (70, torch_y))
+        screen.blit(right_torch, (screen_width - 70 - right_torch.get_width(), torch_y))
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+                elif event.key in (pygame.K_UP, pygame.K_w):
+                    selected = (selected - 1) % len(options)
+                elif event.key in (pygame.K_DOWN, pygame.K_s):
+                    selected = (selected + 1) % len(options)
+                elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    if options[selected] == "Play Again":
+                        return 'play_again'
+                    else:
+                        return 'menu'
+
+
+def win_screen(last_map):
+    # Keyboard-centric level-cleared screen with Play Again / Main Menu.
+    options = ["Play Again", "Main Menu"]
+    selected = 0
+
+    while True:
+        screen.fill((0, 0, 0))
+        screen.blit(
+            pygame.transform.scale(
+                pygame.image.load(os.path.join(ASSET_FOLDER, 'screen_cleared.png')),
+                (screen_width, screen_height),
+            ),
+            (0, 0),
+        )
+
+        start_y = screen_height - 120
+        for i, option in enumerate(options):
+            if i == selected:
+                color = (255, 255, 0)
+                label = "> " + option + " <"
+            else:
+                color = (255, 255, 255)
+                label = option
+            torch_y = 92
+            torch_frame = pygame.time.get_ticks() // 90 % len(torch_frames)
+            left_torch = torch_frames[torch_frame]
+            right_torch = pygame.transform.flip(left_torch, True, False)
+            screen.blit(left_torch, (70, torch_y))
+            screen.blit(right_torch, (screen_width - 70 - right_torch.get_width(), torch_y))
+
             draw_text(label, font, color, screen, screen_width // 2, start_y + i * 40, center=True)
 
         pygame.display.update()
@@ -113,22 +183,30 @@ def death_screen(last_map):
                     selected = (selected + 1) % len(options)
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     if options[selected] == "Play Again":
-                        launch_level(last_map)
-                        selected = 0
+                        return 'play_again'
                     else:
-                        return
+                        return 'menu'
 
 
 def launch_level(map_path):
-    # Run the game and react to how it ended.
+    # Run the game and react to how it ended. Loop (never recurse) so repeated
+    # plays don't stack menus/frames on the call stack.
     global screen
-    status = gameplay.main(map_path)
-    # Restore the menu window/caption after gameplay took over the display.
-    screen = pygame.display.set_mode((screen_width, screen_height))
-    pygame.display.set_caption("tu es la canard")
-    if status == 'dead':
-        death_screen(map_path)
-    # 'won' and 'quit' fall through back to the menu.
+    while True:
+        status = gameplay.main(map_path)
+        # Restore the menu window/caption after gameplay took over the display.
+        screen = pygame.display.set_mode((screen_width, screen_height))
+        pygame.display.set_caption("tu es la canard")
+        if status == 'dead':
+            if death_screen(map_path) == 'play_again':
+                continue
+            return
+        if status == 'won':
+            if win_screen(map_path) == 'play_again':
+                continue
+            return
+        # 'quit' falls through back to the menu.
+        return
 
 
 def main_menu():

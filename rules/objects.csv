@@ -13,4 +13,5 @@ object_number,object_name,object_type_code,object_type,object_class,solid,moveme
 11,stone,11,barrier,stone,yes,no,no,,
 12,wood,12,barrier,wood,yes,no,no,,
 13,end_door,13,door,open_door,no,no,no,,
+14,torch,14,decoration,torch,no,no,no,,
 

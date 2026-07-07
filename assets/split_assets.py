@@ -5,7 +5,53 @@ from collections import deque
 
 SOURCE_IMAGE = "assets.png"
 DOOR_SOURCE_IMAGE = "doors.png"
+WALL_SOURCE_IMAGE = "walls.png"
+MORE_WALLS_SOURCE_IMAGE = "more_walls.png"
+TORCH_SOURCE_IMAGE = "torch/torch_sheet.png"
+ROCK_ENEMY_SOURCE_IMAGE = "rock_enemy/up-down-left-right.png"
 OUTPUT_DIR = Path("split_assets")
+
+# walls.png is a 5x5 grid. Columns have uneven widths (full walls vs. narrow
+# edge/pillar pieces) so we crop by explicit cell bands and trim the black
+# padding per cell. Bands are (start, end) pixel boundaries including gutters.
+WALL_COL_BANDS = [(0, 291), (291, 475), (475, 651), (651, 958), (958, 1254)]
+WALL_ROW_BANDS = [(0, 258), (258, 499), (499, 739), (739, 979), (979, 1254)]
+WALL_MATERIALS = ["brick", "cobble", "sandstone", "lava", "mossy"]
+WALL_VARIANTS = ["full", "left", "pillar", "block", "right"]
+
+# more_walls.png is a 2-row (lava, mossy) sheet of room-border pieces. Columns:
+# a top edge, three vertical-edge pillars, a top corner, a bottom edge and a
+# bottom corner. Crops are content-tight (no trim) so solid tiles fill their
+# cell edge-to-edge with no black border.
+MORE_WALLS_ROW_BANDS = [(181, 439), (556, 816)]  # lava, mossy
+MORE_WALLS_MATERIALS = ["lava", "mossy"]
+# (name, left, right) for each column tile within a row.
+MORE_WALLS_COLS = [
+    ("top", 26, 270),
+    ("vertical_1", 324, 387),
+    ("vertical_2", 416, 478),
+    ("vertical_3", 507, 570),
+    ("corner_top", 626, 882),
+    ("bottom", 942, 1200),
+    ("corner_bottom", 1262, 1499),
+]
+
+# torch/torch_sheet.png is a 2-row (red, green) x 6-frame animation sheet. Each
+# frame is a full wall tile with the animated flame. Crops are content-tight so
+# each frame fills its tile with no black border.
+TORCH_OUTPUT_DIR = Path("torch")
+TORCH_ROW_BANDS = [(137, 500), (517, 887)]  # red, green
+TORCH_COLORS = ["red", "green"]
+TORCH_COL_BANDS = [
+    (32, 263), (278, 510), (525, 758), (772, 1004), (1019, 1251), (1265, 1498),
+]
+
+# rock_enemy/up-down-left-right.png is a 4-row animation sheet.
+# Rows are: up, down, left, right. We split each row into 8 frames.
+ROCK_ENEMY_OUTPUT_DIR = Path("rock_enemy")
+ROCK_ENEMY_DIRECTIONS = ["up", "down", "left", "right"]
+ROCK_ENEMY_ROW_BANDS = [(0, 76), (76, 152), (152, 228), (228, 304)]
+ROCK_ENEMY_COL_BANDS = [(0, 96), (96, 192), (192, 288), (288, 384), (384, 480), (480, 576), (576, 672), (672, 768)]
 
 # Approximate crop rectangles from the generated sheet:
 # (left, top, right, bottom)
@@ -60,6 +106,33 @@ def trim_black(im, threshold=10, padding=2):
         for x in range(w):
             r, g, b, a = px[x, y]
             if a > 0 and (r > threshold or g > threshold or b > threshold):
+                xs.append(x)
+                ys.append(y)
+
+    if not xs or not ys:
+        return rgba
+
+    left = max(0, min(xs) - padding)
+    top = max(0, min(ys) - padding)
+    right = min(w, max(xs) + 1 + padding)
+    bottom = min(h, max(ys) + 1 + padding)
+
+    return rgba.crop((left, top, right, bottom))
+
+
+def trim_background(im, threshold=25, padding=2):
+    """Trim a uniform background color around a sprite/tile."""
+    rgba = im.convert("RGBA")
+    px = rgba.load()
+    w, h = rgba.size
+    bg_r, bg_g, bg_b, _bg_a = px[0, 0]
+
+    xs = []
+    ys = []
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a > 0 and abs(r - bg_r) + abs(g - bg_g) + abs(b - bg_b) > threshold:
                 xs.append(x)
                 ys.append(y)
 
@@ -164,6 +237,86 @@ def split_doors():
         print("Saved door_open.png (fallback copy of closed)")
 
 
+def split_walls():
+    """Split walls.png into a 5x5 grid of individual wall tiles."""
+    source = Path(WALL_SOURCE_IMAGE)
+    if not source.exists():
+        print(f"Skipped wall split: {WALL_SOURCE_IMAGE!r} not found")
+        return
+
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    image = Image.open(source).convert("RGBA")
+
+    for row, (top, bottom) in enumerate(WALL_ROW_BANDS):
+        material = WALL_MATERIALS[row]
+        for col, (left, right) in enumerate(WALL_COL_BANDS):
+            variant = WALL_VARIANTS[col]
+            cropped = image.crop((left, top, right, bottom))
+            trimmed = trim_black(cropped)
+
+            out_path = OUTPUT_DIR / f"wall_{material}_{variant}.png"
+            trimmed.save(out_path)
+            print(f"Saved {out_path}")
+
+
+def split_more_walls():
+    """Split more_walls.png into lava/mossy room-border edge and corner tiles."""
+    source = Path(MORE_WALLS_SOURCE_IMAGE)
+    if not source.exists():
+        print(f"Skipped more-wall split: {MORE_WALLS_SOURCE_IMAGE!r} not found")
+        return
+
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    image = Image.open(source).convert("RGBA")
+
+    for row, (top, bottom) in enumerate(MORE_WALLS_ROW_BANDS):
+        material = MORE_WALLS_MATERIALS[row]
+        for variant, left, right in MORE_WALLS_COLS:
+            cell = image.crop((left, top, right, bottom))
+            out_path = OUTPUT_DIR / f"wall_{material}_{variant}.png"
+            cell.save(out_path)
+            print(f"Saved {out_path}")
+
+
+def split_torch():
+    """Split torch/torch_sheet.png into red/green 6-frame animation tiles."""
+    source = Path(TORCH_SOURCE_IMAGE)
+    if not source.exists():
+        print(f"Skipped torch split: {TORCH_SOURCE_IMAGE!r} not found")
+        return
+
+    TORCH_OUTPUT_DIR.mkdir(exist_ok=True)
+    image = Image.open(source).convert("RGBA")
+
+    for row, (top, bottom) in enumerate(TORCH_ROW_BANDS):
+        color = TORCH_COLORS[row]
+        for frame, (left, right) in enumerate(TORCH_COL_BANDS, start=1):
+            cell = image.crop((left, top, right, bottom))
+            out_path = TORCH_OUTPUT_DIR / f"torch_{color}_{frame}.png"
+            cell.save(out_path)
+            print(f"Saved {out_path}")
+
+
+def split_rock_enemy():
+    """Split the rock enemy sheet into directional animation frames."""
+    source = Path(ROCK_ENEMY_SOURCE_IMAGE)
+    if not source.exists():
+        print(f"Skipped rock enemy split: {ROCK_ENEMY_SOURCE_IMAGE!r} not found")
+        return
+
+    ROCK_ENEMY_OUTPUT_DIR.mkdir(exist_ok=True)
+    image = Image.open(source).convert("RGBA")
+
+    for row, (top, bottom) in enumerate(ROCK_ENEMY_ROW_BANDS):
+        direction = ROCK_ENEMY_DIRECTIONS[row]
+        for frame, (left, right) in enumerate(ROCK_ENEMY_COL_BANDS, start=1):
+            cropped = image.crop((left, top, right, bottom))
+            trimmed = trim_background(cropped, threshold=25, padding=2)
+            out_path = ROCK_ENEMY_OUTPUT_DIR / f"rock_{direction}_{frame}.png"
+            trimmed.save(out_path)
+            print(f"Saved {out_path}")
+
+
 def main():
     source = Path(SOURCE_IMAGE)
     if not source.exists():
@@ -187,6 +340,18 @@ def main():
 
     # Also split door assets if doors.png exists.
     split_doors()
+
+    # Also split wall assets if walls.png exists.
+    split_walls()
+
+    # Also split the extra room-border wall pieces if more_walls.png exists.
+    split_more_walls()
+
+    # Also split the animated torch frames if torch_sheet.png exists.
+    split_torch()
+
+    # Also split the rock enemy sheet into directional animation frames.
+    split_rock_enemy()
 
 
 if __name__ == "__main__":

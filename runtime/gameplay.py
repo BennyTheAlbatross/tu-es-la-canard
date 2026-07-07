@@ -12,6 +12,7 @@ from rules.sprits import (
     TILE_SIZE,
     load_duck_images,
     load_enemy_images,
+    load_torch_images,
     load_enviromental_images as enviromental_images,
     load_object_images as object_images,
 )
@@ -27,6 +28,11 @@ rules_file = os.path.join(HOME_DIR, 'rules', 'objects.csv')
 #map_file is passed into main()/build_world() so the menu can pick the level.
 screen_width = 800
 screen_height = 400
+
+# Global fixed timestep so gameplay always runs at the same speed. A single
+# shared clock is ticked once per frame at this rate.
+FPS = 60
+GAME_CLOCK = pygame.time.Clock()
 
 # Visual underlay for enemy spawn tiles so enemy cells are not empty.
 ENEMY_BASE_TILES = {
@@ -74,9 +80,10 @@ def load_objects():
 def build_world(object_defs, map_file):
     background = []
     barriers = []
-    enemies = []
     gems = []
+    enemies = []
     doors = []
+    torches = []
     player_spawns = []
     max_used_col = 0
     max_used_row = 0
@@ -132,6 +139,9 @@ def build_world(object_defs, map_file):
                     # Keep door over normal background and track as a separate object.
                     background.append((x, y, 'background'))
                     doors.append((x, y, object_name))
+                elif object_type == 'decoration':
+                    # Animated decoration (e.g. torch); drawn per-frame, not solid.
+                    torches.append((x, y, object_name))
                 elif object_type == 'player':
                     # Keep player underlay visual-only; do not add to barriers.
                     background.append((x, y, PLAYER_BASE_TILE))
@@ -140,7 +150,7 @@ def build_world(object_defs, map_file):
     world_width = max_used_col * TILE_SIZE[0]
     world_height = max_used_row * TILE_SIZE[1]
     movments.barriers = barriers
-    return background, barriers, enemies, gems, doors, player_spawns, world_width, world_height
+    return background, barriers, enemies, gems, doors, torches, player_spawns, world_width, world_height
 
 
 def build_static_world_surface(world_width, world_height, background, barriers, env_images):
@@ -160,7 +170,7 @@ def build_static_world_surface(world_width, world_height, background, barriers, 
     
 
     
-def draw_world(screen, static_world, enemies, gems, doors, door_open, player, obj_images, camera_x=0, camera_y=0):
+def draw_world(screen, static_world, enemies, gems, doors, door_open, torches, torch_frames, torch_frame, player, obj_images, camera_x=0, camera_y=0):
 
     tile_w, tile_h = TILE_SIZE
     view_left = camera_x - tile_w
@@ -173,10 +183,15 @@ def draw_world(screen, static_world, enemies, gems, doors, door_open, player, ob
     screen.fill((0, 0, 0))
     screen.blit(static_world, (0, 0), area=view_rect)
 
-    for enemy in enemies:
-        if enemy.rect.right < view_left or enemy.rect.left > view_right or enemy.rect.bottom < view_top or enemy.rect.top > view_bottom:
+    # Animated torches sit on the walls, drawn under gems/enemies/player.
+    for x, y, name in torches:
+        if x < view_left or x > view_right or y < view_top or y > view_bottom:
             continue
-        screen.blit(enemy.image, (enemy.rect.x - camera_x, enemy.rect.y - camera_y))
+        frames = torch_frames.get(name)
+        if not frames:
+            continue
+        image = frames[torch_frame % len(frames)]
+        screen.blit(image, (x - camera_x, y - camera_y))
 
     for x, y, name in gems:
         if x < view_left or x > view_right or y < view_top or y > view_bottom:
@@ -199,7 +214,15 @@ def draw_world(screen, static_world, enemies, gems, doors, door_open, player, ob
             continue
         screen.blit(image, (x - camera_x, y - camera_y))
 
-    screen.blit(player.image, (player.rect.x - camera_x, player.rect.y - camera_y))
+    # Draw enemies after gems/doors so they render on top of them.
+    for enemy in enemies:
+        if enemy.rect.right < view_left or enemy.rect.left > view_right or enemy.rect.bottom < view_top or enemy.rect.top > view_bottom:
+            continue
+        screen.blit(enemy.image, (enemy.rect.x - camera_x, enemy.rect.y - camera_y))
+
+    # Draw the full-size sprite centered on the (smaller) collision rect.
+    player_pos = player.image.get_rect(center=player.rect.center)
+    screen.blit(player.image, (player_pos.x - camera_x, player_pos.y - camera_y))
 
 
 def main(map_file=DEFAULT_MAP):
@@ -209,13 +232,14 @@ def main(map_file=DEFAULT_MAP):
     enemy_images = load_enemy_images()
     env_images = enviromental_images()
     obj_images = object_images()
+    torch_frames = load_torch_images()
 
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("Tu es le canard")
 
     object_defs = load_objects()
     movments.configure_enemy_collision_rules(object_defs)
-    background, barriers, enemies, gems, doors, player_spawns, world_width, world_height = build_world(object_defs, map_file)
+    background, barriers, enemies, gems, doors, torches, player_spawns, world_width, world_height = build_world(object_defs, map_file)
     static_world = build_static_world_surface(world_width, world_height, background, barriers, env_images)
 
     if player_spawns:
@@ -226,7 +250,10 @@ def main(map_file=DEFAULT_MAP):
 
     camera_x = 0 
     camera_y = 0 
-    clock = pygame.time.Clock()
+
+    # Torch animation: advance one of the 6 frames every few ticks.
+    torch_tick = 0
+    TORCH_TICKS_PER_FRAME = 12
 
     while True:
         # Handle events
@@ -270,14 +297,18 @@ def main(map_file=DEFAULT_MAP):
         camera_x = max(0, min(camera_x, max_camera_x))
         camera_y = max(0, min(camera_y, max_camera_y))
 
-        draw_world(screen, static_world, enemies, gems, doors, door_is_open, player, obj_images, camera_x, camera_y)
+        # Advance the shared torch animation frame.
+        torch_tick += 1
+        torch_frame = (torch_tick // TORCH_TICKS_PER_FRAME) % 6
+
+        draw_world(screen, static_world, enemies, gems, doors, door_is_open, torches, torch_frames, torch_frame, player, obj_images, camera_x, camera_y)
 
 
         # Update the display
         pygame.display.flip()
 
-        # Cap the frame rate
-        clock.tick(60)
+        # Cap the frame rate with the shared global clock for consistent speed.
+        GAME_CLOCK.tick(FPS)
 
 
 

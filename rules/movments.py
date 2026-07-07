@@ -9,6 +9,10 @@ from rules.interactions import _barrier_rect
 DUCK_SPEED = 5
 barriers = []
 
+# Player collision box relative to the tile size. Smaller than 1.0 lets the
+# duck squeeze past tight gaps more easily. The sprite is still drawn full size.
+PLAYER_HITBOX_SCALE = 0.8
+
 # Populated from rules/objects.csv ability_rule, e.g. "blocks:border|wood".
 enemy_collision_rules = {
     'enemy_fire': {'border'},
@@ -61,6 +65,12 @@ class duck:
         self.images = load_duck_images()
         self.image = self.images['front']
         self.rect = self.image.get_rect(center=(x, y)) # this ancords the image. 
+        # Shrink the collision box (kept centered) so the duck can squeeze past
+        # tight gaps; the sprite is still drawn at full tile size.
+        self.rect.inflate_ip(
+            -round(self.rect.width * (1 - PLAYER_HITBOX_SCALE)),
+            -round(self.rect.height * (1 - PLAYER_HITBOX_SCALE)),
+        )
         self.speed = DUCK_SPEED
 
 #define user input for duck movement
@@ -164,12 +174,16 @@ class Enemy_water:
 class Enemy_rock:
     def __init__(self, x, y):
         self.images = load_enemy_images()# Load the enemy image using the load_enemy_images function.
-        self.image = self.images['enemy_rock']
+        self.frames = self.images['enemy_rock']
+        self.frame_index = 0
+        self.frame_tick = 0
+        self.image = self.frames['up'][0]
         self.rect = self.image.get_rect(center =(x, y))
-        self.speed = 2
+        self.speed = 1
         self.type = 'rock' 
         self.object_name = 'enemy_rock'
         self.direction = 1  # 1 for right, -1 for left
+        self.animation_ticks_per_frame = 8
     
     def move(self):
         self.rect.y += self.speed  * self.direction # Move the enemy to the right
@@ -189,3 +203,11 @@ class Enemy_rock:
                 else:  # Moving up
                     self.rect.top = rect.bottom
                 self.direction *= -1  # Reverse direction
+
+        frame_key = 'up' if self.direction == 1 else 'down'
+        frames = self.frames[frame_key]
+        self.frame_tick += 1
+        if self.frame_tick >= self.animation_ticks_per_frame:
+            self.frame_tick = 0
+            self.frame_index = (self.frame_index + 1) % len(frames)
+        self.image = frames[self.frame_index % len(frames)]

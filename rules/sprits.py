@@ -6,7 +6,7 @@ RULES_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(RULES_DIR)
 ASSET_FOLDER = os.path.join(PROJECT_DIR, 'assets')
 DUCK_SPEED = 5
-TILE_SIZE = (30, 30)
+TILE_SIZE = (40, 40)
 
 
 def _first_existing(candidates):
@@ -15,6 +15,11 @@ def _first_existing(candidates):
         if os.path.exists(path):
             return path
     raise FileNotFoundError(f'None of these files were found: {candidates}')
+
+
+def _make_black_transparent(surface):
+    surface.set_colorkey((0, 0, 0))
+    return surface
 
 # finction to load sprits. one for each class duck, enemey, enviromental. 
 
@@ -46,16 +51,29 @@ def load_duck_images():
 def load_enemy_images():
     enemy_fire = pygame.image.load(os.path.join(ASSET_FOLDER, 'enemy_fire.png'))
     enemy_water = pygame.image.load(os.path.join(ASSET_FOLDER, 'enemy_water.png'))
-    enemy_rock = pygame.image.load(os.path.join(ASSET_FOLDER, 'enemy_rock.png'))
+    rock_dir = os.path.join(ASSET_FOLDER, 'rock_enemy')
     #scale the images so they can be defined with ENEMY_SIZE
     enemy_fire = pygame.transform.scale(enemy_fire, TILE_SIZE)
     enemy_water = pygame.transform.scale(enemy_water, TILE_SIZE)
-    enemy_rock = pygame.transform.scale(enemy_rock, TILE_SIZE)
+
+    def load_rock_frames(direction):
+        frames = []
+        for i in range(1, 9):
+            frame = pygame.image.load(os.path.join(rock_dir, f'rock_{direction}_{i}.png'))
+            frame = pygame.transform.scale(frame, TILE_SIZE)
+            frame = _make_black_transparent(frame)
+            frames.append(frame)
+        return frames
     
     return {
         'enemy_fire': enemy_fire,
         'enemy_water': enemy_water,
-        'enemy_rock': enemy_rock
+        'enemy_rock': {
+            'up': load_rock_frames('up'),
+            'down': load_rock_frames('down'),
+            'left': load_rock_frames('left'),
+            'right': load_rock_frames('right'),
+        }
     }
 
 def load_enviromental_images():
@@ -74,7 +92,8 @@ def load_enviromental_images():
     stone_tile = pygame.transform.scale(stone_tile, TILE_SIZE) # Scale the stone tile image to the correct size for the game.
     wood_tile = pygame.transform.scale(wood_tile, TILE_SIZE) # Scale the wood tile image to the correct size for the game.
 
-
+    # Barrier/wall tiles are solid fills: do NOT colorkey black, otherwise the
+    # dark mortar becomes transparent and shows through as a black grid.
     return {
         'background_image': background_image,
         'border_image': border_image,
@@ -88,8 +107,8 @@ def load_object_images():
     gem_emeral = pygame.image.load(_first_existing(['gem_emeral.png', 'gem_emerald.png', 'gem_green.png']))
     gem_ruby = pygame.image.load(_first_existing(['gem_ruby.png', 'gem_red.png']))
     gem_sapphire = pygame.image.load(_first_existing(['gem_sapphire.png', 'gem_blue.png', 'gem_green.png']))
-    door_closed = pygame.image.load(_first_existing(['door_closed.png', 'door_part_01.png']))
-    door_open = pygame.image.load(_first_existing(['door_open.png', 'door_part_02.png', 'door_part_01.png']))
+    door_closed = pygame.image.load(os.path.join(ASSET_FOLDER, 'doorClosed.png'))
+    door_open = pygame.image.load(os.path.join(ASSET_FOLDER, 'doorOpen.png'))
 
     gem_emeral = pygame.transform.scale(gem_emeral, TILE_SIZE) # Scale the blue gem image to the correct size for the game.
     gem_ruby = pygame.transform.scale(gem_ruby, TILE_SIZE) # Scale the red gem image to the correct size for the game.
@@ -99,6 +118,10 @@ def load_object_images():
     
     door_closed.set_colorkey((0,0,0))
     door_open.set_colorkey((0,0,0))
+    gem_emeral.set_colorkey((0,0,0))
+    gem_ruby.set_colorkey((0,0,0))
+    gem_sapphire.set_colorkey((0,0,0))
+
 
     
     return {
@@ -108,3 +131,16 @@ def load_object_images():
         'door_closed': door_closed,
         'door_open': door_open,
         } 
+
+
+def load_torch_images():
+    # Load the 6-frame torch animation (red) as a list of tile-sized frames.
+    torch_dir = os.path.join(ASSET_FOLDER, 'torch')
+    frames = []
+    for i in range(1, 7):
+        frame = pygame.image.load(os.path.join(torch_dir, f'torch_red_{i}.png'))
+        frame = pygame.transform.scale(frame, TILE_SIZE)
+        frame = _make_black_transparent(frame)
+        frames.append(frame)
+    return {'torch': frames}
+
