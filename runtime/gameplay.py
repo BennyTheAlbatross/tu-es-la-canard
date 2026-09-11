@@ -19,6 +19,7 @@ from rules.sprits import (
 from rules.movments import duck, Enemy_fire, Enemy_water, Enemy_rock
 import rules.movments as movments 
 from rules import interactions
+from rules import shaders
 
 
 #constants 
@@ -87,6 +88,7 @@ def build_world(object_defs, map_file):
     player_spawns = []
     max_used_col = 0
     max_used_row = 0
+    map_cells = {}
 
     with open(map_file, 'r') as f:
         reader = csv.reader(f)
@@ -97,6 +99,8 @@ def build_world(object_defs, map_file):
                 except ValueError:
                     # Skip header values like Column1 and BOM-prefixed cells.
                     continue
+
+                map_cells[(r, c)] = object_id
 
                 obj = object_defs.get(object_id)
                 if not obj:
@@ -149,28 +153,75 @@ def build_world(object_defs, map_file):
 
     world_width = max_used_col * TILE_SIZE[0]
     world_height = max_used_row * TILE_SIZE[1]
+
+    tile_map = [
+        [shaders.BACKGROUND for _ in range(max_used_col)]
+        for _ in range(max_used_row)
+    ]
+
+    for (row, column), object_id in map_cells.items():
+        if row < max_used_row and column < max_used_col:
+            tile_map[row][column] = object_id
+
     movments.barriers = barriers
-    return background, barriers, enemies, gems, doors, torches, player_spawns, world_width, world_height
+    return (
+        background,
+        barriers,
+        enemies,
+        gems,
+        doors,
+        torches,
+        player_spawns,
+        world_width,
+        world_height,
+        tile_map,
+    )
 
 
 def build_static_world_surface(world_width, world_height, background, barriers, env_images):
     # Pre-render static tile layers once and only draw dynamic objects every frame.
     static_world = pygame.Surface((world_width, world_height)).convert()
     static_world.fill((0, 0, 0))
+    animated_tiles = []
 
     for x, y, name in background:
         image_key = BACKGROUND_TILES.get(name, 'background_image')
-        static_world.blit(env_images[image_key], (x, y))
+        image = env_images[image_key]
+        if isinstance(image, list):
+            animated_tiles.append((x, y, image))
+            continue
+        static_world.blit(image, (x, y))
 
     for x, y, name in barriers:
         image_key = BARRIER_TILES.get(name, 'lava_tile')
-        static_world.blit(env_images[image_key], (x, y))
+        image = env_images[image_key]
+        if isinstance(image, list):
+            animated_tiles.append((x, y, image))
+            continue
+        static_world.blit(image, (x, y))
 
-    return static_world
+    return static_world, animated_tiles
     
 
     
-def draw_world(screen, static_world, enemies, gems, doors, door_open, torches, torch_frames, torch_frame, player, obj_images, camera_x=0, camera_y=0):
+def draw_world(
+    screen,
+    static_world,
+    animated_tiles,
+    enemies,
+    gems,
+    doors,
+    door_open,
+    torches,
+    torch_frames,
+    torch_frame,
+    player,
+    obj_images,
+    camera_x=0,
+    camera_y=0,
+    effects=None,
+    time_seconds=0.0,
+):
 
     tile_w, tile_h = TILE_SIZE
     view_left = camera_x - tile_w
@@ -182,6 +233,14 @@ def draw_world(screen, static_world, enemies, gems, doors, door_open, torches, t
     view_rect = pygame.Rect(camera_x, camera_y, screen_width, screen_height)
     screen.fill((0, 0, 0))
     screen.blit(static_world, (0, 0), area=view_rect)
+
+    # Draw animated tiles (e.g. lava) on top of the static world.
+    lava_frame = int(time_seconds * 8)
+    for x, y, frames in animated_tiles:
+        if x < view_left or x > view_right or y < view_top or y > view_bottom:
+            continue
+        image = frames[lava_frame % len(frames)]
+        screen.blit(image, (x - camera_x, y - camera_y))
 
     # Animated torches sit on the walls, drawn under gems/enemies/player.
     for x, y, name in torches:
@@ -224,6 +283,37 @@ def draw_world(screen, static_world, enemies, gems, doors, door_open, torches, t
     player_pos = player.image.get_rect(center=player.rect.center)
     screen.blit(player.image, (player_pos.x - camera_x, player_pos.y - camera_y))
 
+    if effects is not None:
+        tile_w, tile_h = TILE_SIZE
+
+        light_objects = [
+            {
+                'object_number': shaders.DUCK,
+                'rect': player.rect,
+            }
+        ]
+
+        for x, y, name in torches:
+            if name != 'torch':
+                continue
+            light_objects.append(
+                {
+                    'object_number': shaders.TORCH,
+                    'x': x,
+                    'y': y,
+                    'width': tile_w,
+                    'height': tile_h,
+                }
+            )
+
+        effects.draw_lighting(
+            screen=screen,
+            game_objects=light_objects,
+            camera_x=camera_x,
+            camera_y=camera_y,
+            time_seconds=time_seconds,
+        )
+
 
 def main(map_file=DEFAULT_MAP):
     pygame.init()
@@ -239,8 +329,29 @@ def main(map_file=DEFAULT_MAP):
 
     object_defs = load_objects()
     movments.configure_enemy_collision_rules(object_defs)
-    background, barriers, enemies, gems, doors, torches, player_spawns, world_width, world_height = build_world(object_defs, map_file)
-    static_world = build_static_world_surface(world_width, world_height, background, barriers, env_images)
+    (
+        background,
+        barriers,
+        enemies,
+        gems,
+        doors,
+        torches,
+        player_spawns,
+        world_width,
+        world_height,
+        tile_map,
+    ) = build_world(object_defs, map_file)
+    static_world, animated_tiles = build_static_world_surface(
+        world_width,
+        world_height,
+        background,
+        barriers,
+        env_images,
+    )
+    effects = shaders.EnvironmentEffects(
+        tile_map=tile_map,
+        tile_size=TILE_SIZE[0],
+    )
 
     if player_spawns:
         spawn_x, spawn_y = player_spawns[-1]
@@ -300,8 +411,26 @@ def main(map_file=DEFAULT_MAP):
         # Advance the shared torch animation frame.
         torch_tick += 1
         torch_frame = (torch_tick // TORCH_TICKS_PER_FRAME) % 6
+        time_seconds = pygame.time.get_ticks() / 1000.0
 
-        draw_world(screen, static_world, enemies, gems, doors, door_is_open, torches, torch_frames, torch_frame, player, obj_images, camera_x, camera_y)
+        draw_world(
+            screen,
+            static_world,
+            animated_tiles,
+            enemies,
+            gems,
+            doors,
+            door_is_open,
+            torches,
+            torch_frames,
+            torch_frame,
+            player,
+            obj_images,
+            camera_x,
+            camera_y,
+            effects=effects,
+            time_seconds=time_seconds,
+        )
 
 
         # Update the display

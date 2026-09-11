@@ -1,4 +1,3 @@
-
 import os
 import pygame
 # Constants
@@ -23,23 +22,18 @@ def _make_black_transparent(surface):
 
 # finction to load sprits. one for each class duck, enemey, enviromental. 
 
+def image_load_function(file_name):
+    image = pygame.image.load(os.path.join(ASSET_FOLDER, file_name))
+    image = pygame.transform.scale(image, TILE_SIZE)
+    image.set_colorkey((0,0,0))
+    return image
+
 def load_duck_images():
-    duck_front = pygame.image.load(os.path.join(ASSET_FOLDER, 'duck_front.png'))
-    duck_back = pygame.image.load(os.path.join(ASSET_FOLDER, 'duck_back.png'))
-    duck_right = pygame.image.load(os.path.join(ASSET_FOLDER, 'duck_walk_1.png'))
-    duck_left = pygame.image.load(os.path.join(ASSET_FOLDER, 'duck_walk_2.png'))  # this need to be inverted
-    duck_left = pygame.transform.flip(duck_left, True, False)  # Flip the image horizontally
-
-    #scale the images so they can be defined with DUCK_SIZE
-    duck_front = pygame.transform.scale(duck_front, TILE_SIZE)
-    duck_back = pygame.transform.scale(duck_back, TILE_SIZE)
-    duck_right = pygame.transform.scale(duck_right, TILE_SIZE)
-    duck_left = pygame.transform.scale(duck_left, TILE_SIZE)
-
-    duck_front.set_colorkey((0,0,0))  
-    duck_back.set_colorkey((0,0,0)) 
-    duck_right.set_colorkey((0,0,0))
-    duck_left.set_colorkey((0,0,0))
+    duck_front = image_load_function('duck_front.png')
+    duck_back = image_load_function('duck_back.png')
+    duck_right = image_load_function('duck_walk_1.png')
+    duck_left = image_load_function('duck_walk_2.png')  # this need to be inverted
+    duck_left = pygame.transform.flip(duck_left, True, False)  # flip the left image horizontally
 
     return {
         'front': duck_front,
@@ -49,16 +43,15 @@ def load_duck_images():
     }
 
 def load_enemy_images():
-    enemy_fire = pygame.image.load(os.path.join(ASSET_FOLDER, 'enemy_fire.png'))
-    enemy_water = pygame.image.load(os.path.join(ASSET_FOLDER, 'enemy_water.png'))
+    enemy_fire = image_load_function('enemy_fire.png')
+    enemy_water = image_load_function('enemy_water.png')
+
     rock_dir = os.path.join(ASSET_FOLDER, 'rock_enemy')
     #scale the images so they can be defined with ENEMY_SIZE
-    enemy_fire = pygame.transform.scale(enemy_fire, TILE_SIZE)
-    enemy_water = pygame.transform.scale(enemy_water, TILE_SIZE)
 
     def load_rock_frames(direction):
         frames = []
-        for i in range(1, 9):
+        for i in range(1, 6):
             frame = pygame.image.load(os.path.join(rock_dir, f'rock_{direction}_{i}.png'))
             frame = pygame.transform.scale(frame, TILE_SIZE)
             frame = _make_black_transparent(frame)
@@ -77,53 +70,40 @@ def load_enemy_images():
     }
 
 def load_enviromental_images():
-    background_image = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_dirt.png'))
-    border_image = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_cave.png'))
-    lava_tile = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_lava.png'))
-    water_tile = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_water.png'))
-    stone_tile = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_stone.png'))
-    wood_tile = pygame.image.load(os.path.join(ASSET_FOLDER, 'tile_wood.png'))
+    background_image = image_load_function('tile_dirt.png')
+    border_image = image_load_function('tile_cave.png')
+#    lava_tile = image_load_function('tile_lava.png')
+    water_tile = image_load_function('tile_water.png')
+    stone_tile = image_load_function('tile_stone.png')
+    wood_tile = image_load_function('tile_wood.png')
+    
+    def load_lava_frames():
+        frames = []
+        for i in range(1, 5):
+            frame = pygame.image.load(os.path.join(ASSET_FOLDER, f'lava_{i}.png'))
+            frame = pygame.transform.scale(frame, TILE_SIZE)
+            frame = _make_black_transparent(frame)
+            frames.append(frame)
+        return frames
+    lava_frames = load_lava_frames()
 
-#now scale the images to the correct size for the game.
-    background_image = pygame.transform.scale(background_image, TILE_SIZE) # this will scale
-    border_image = pygame.transform.scale(border_image, TILE_SIZE) # this will scale the border image to the correct size for the game.
-    lava_tile = pygame.transform.scale(lava_tile, TILE_SIZE) # Scale the lava tile image to the correct size for the game.
-    water_tile = pygame.transform.scale(water_tile, TILE_SIZE) # Scale the water tile image to the correct size for the game.i
-    stone_tile = pygame.transform.scale(stone_tile, TILE_SIZE) # Scale the stone tile image to the correct size for the game.
-    wood_tile = pygame.transform.scale(wood_tile, TILE_SIZE) # Scale the wood tile image to the correct size for the game.
-
-    # Barrier/wall tiles are solid fills: do NOT colorkey black, otherwise the
-    # dark mortar becomes transparent and shows through as a black grid.
     return {
         'background_image': background_image,
         'border_image': border_image,
-        'lava_tile': lava_tile,
+        #'lava_tile': lava_tile,
         'water_tile': water_tile,
         'stone_tile': stone_tile,
-        'wood_tile': wood_tile
+        'wood_tile': wood_tile,
+        'lava_tile': lava_frames,
         }
 
 def load_object_images():
-    gem_emeral = pygame.image.load(_first_existing(['gem_emeral.png', 'gem_emerald.png', 'gem_green.png']))
-    gem_ruby = pygame.image.load(_first_existing(['gem_ruby.png', 'gem_red.png']))
-    gem_sapphire = pygame.image.load(_first_existing(['gem_sapphire.png', 'gem_blue.png', 'gem_green.png']))
-    door_closed = pygame.image.load(os.path.join(ASSET_FOLDER, 'doorClosed.png'))
-    door_open = pygame.image.load(os.path.join(ASSET_FOLDER, 'doorOpen.png'))
+    gem_emeral = image_load_function('gem_green.png')
+    gem_ruby = image_load_function('gem_red.png')
+    gem_sapphire = image_load_function('gem_red.png')
+    door_closed = image_load_function('doorClosed.png')
+    door_open = image_load_function('doorOpen.png')
 
-    gem_emeral = pygame.transform.scale(gem_emeral, TILE_SIZE) # Scale the blue gem image to the correct size for the game.
-    gem_ruby = pygame.transform.scale(gem_ruby, TILE_SIZE) # Scale the red gem image to the correct size for the game.
-    gem_sapphire = pygame.transform.scale(gem_sapphire, TILE_SIZE) # Scale the blue gem image to the correct size for the game.
-    door_closed = pygame.transform.scale(door_closed, TILE_SIZE)
-    door_open = pygame.transform.scale(door_open, TILE_SIZE)
-    
-    door_closed.set_colorkey((0,0,0))
-    door_open.set_colorkey((0,0,0))
-    gem_emeral.set_colorkey((0,0,0))
-    gem_ruby.set_colorkey((0,0,0))
-    gem_sapphire.set_colorkey((0,0,0))
-
-
-    
     return {
         'gem_emeral': gem_emeral,
         'gem_ruby': gem_ruby,
@@ -131,7 +111,6 @@ def load_object_images():
         'door_closed': door_closed,
         'door_open': door_open,
         } 
-
 
 def load_torch_images():
     # Load the 6-frame torch animation (red) as a list of tile-sized frames.
@@ -143,4 +122,3 @@ def load_torch_images():
         frame = _make_black_transparent(frame)
         frames.append(frame)
     return {'torch': frames}
-
