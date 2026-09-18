@@ -1,23 +1,24 @@
 # setup python
 import pygame, sys, os
 
+# define current file paths
+
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(CURRENT_DIR)
 if PROJECT_DIR not in sys.path:
     sys.path.append(PROJECT_DIR)
 
-
 import gameplay
 from gameplay import screen_width, screen_height
 from rules.sprits import TILE_SIZE, ASSET_FOLDER, load_torch_images
-
+import tuer_le_canard
+import subprocess 
 
 MAPS_DIR = os.path.join(PROJECT_DIR, 'maps', 'game')
 
-
 # setup pygame windows
 pygame.init()
-pygame.display.set_caption("tu es la canard")
+pygame.display.set_caption("tu es le canard")
 screen = pygame.display.set_mode((screen_width, screen_height))
 
 font = pygame.font.Font(None, 36)
@@ -196,7 +197,7 @@ def launch_level(map_path):
         status = gameplay.main(map_path)
         # Restore the menu window/caption after gameplay took over the display.
         screen = pygame.display.set_mode((screen_width, screen_height))
-        pygame.display.set_caption("tu es la canard")
+        pygame.display.set_caption("tu es le canard")
         if status == 'dead':
             if death_screen(map_path) == 'play_again':
                 continue
@@ -211,15 +212,19 @@ def launch_level(map_path):
 
 def main_menu():
     maps = list_maps()
+
     selected = 0
+    
 
     while True:
         if maps:
             options = [name for name, _path in maps]
         else:
-            options = ["(no maps found)"]
+            options = []
+        options.append("tuer_le_canard")
+        options.append("map_maker")
 
-        draw_menu("tu es la canard", options, selected)
+        draw_menu("tu es le canard", options, selected)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -234,9 +239,15 @@ def main_menu():
                 elif event.key in (pygame.K_DOWN, pygame.K_s):
                     selected = (selected + 1) % len(options)
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                    if maps:
+               #     if maps:
+                   #     _name, path = maps[selected]
+                    #    launch_level(path)import
+                    if selected < len(maps):
                         _name, path = maps[selected]
                         launch_level(path)
-
+                    elif options[selected] == "tuer_le_canard":
+                        subprocess.Popen([sys.executable, "../tuer_le_canard/tuer_le_canard.py"])
+                    elif options[selected] == "map_maker":
+                        subprocess.Popen([sys.executable, "../map_editor.py"])
 
 main_menu()

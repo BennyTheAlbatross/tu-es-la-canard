@@ -1,0 +1,13 @@
+i need: 
+
+1) a new object that allows only for movment over it in a single direction. (like a gate or somthing)
+2) the fire and water deamon need animations. 
+3) duck needs a better amination cycle. 
+4) a button i press to hold up a torch. 
+  this increas visability. 
+  but increase the speed of deamons.
+then maybe a new wall tile that can be only seen/passed through whilst eh light is active. 
+
+5) in the main menu. i want it better. i want all level to be playable in either ray casted or 2d version. 
+
+

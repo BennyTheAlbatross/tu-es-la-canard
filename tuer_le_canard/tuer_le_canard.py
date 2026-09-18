@@ -7,7 +7,10 @@ from game_data import load_level
 
 
 ROOT = Path(__file__).resolve().parent
-SOURCE_PROJECT = ROOT.parent / "tu-es-la-canard"
+#SOURCE_PROJECT = ROOT.parent / "tu-es-la-canard"
+
+SOURCE_PROJECT = ROOT.parent
+
 SCREEN_SIZE = (1280, 720)
 RENDER_SIZES = ((400, 225), (480, 270), (640, 360))
 DEFAULT_RENDER_QUALITY = 1
@@ -319,7 +322,7 @@ def main():
     pygame.mouse.get_rel()
 
     level = load_level(
-        SOURCE_PROJECT / "maps/game/map1.csv",
+        SOURCE_PROJECT / "maps/game/raycaster.csv",
         SOURCE_PROJECT / "rules/objects.csv",
     )
     walls, sprites = load_assets()
