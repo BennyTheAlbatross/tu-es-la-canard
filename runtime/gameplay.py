@@ -13,10 +13,12 @@ from rules.sprits import (
     load_duck_images,
     load_enemy_images,
     load_torch_images,
+    load_collapsing_floor_images,
     load_enviromental_images as enviromental_images,
     load_object_images as object_images,
 )
 from rules.movments import duck, Enemy_fire, Enemy_water, Enemy_rock
+from rules.hazards import CollapsingFloor
 import rules.movments as movments 
 from rules import interactions
 from rules import shaders
@@ -30,10 +32,7 @@ rules_file = os.path.join(HOME_DIR, 'rules', 'objects.csv')
 screen_width = 800
 screen_height = 400
 
-# Global fixed timestep so gameplay always runs at the same speed. A single
-# shared clock is ticked once per frame at this rate.
 FPS = 60
-GAME_CLOCK = pygame.time.Clock()
 
 # Visual underlay for enemy spawn tiles so enemy cells are not empty.
 ENEMY_BASE_TILES = {
@@ -71,7 +70,7 @@ BARRIER_TILES = {
 #define loads object 
 def load_objects():
     by_id = {}
-    with open(rules_file, 'r') as f:
+    with open(rules_file, 'r', encoding='utf-8-sig', newline='') as f:
         for row in csv.DictReader(f):
             by_id[int(row['object_number'])] = row 
 
@@ -85,12 +84,13 @@ def build_world(object_defs, map_file):
     enemies = []
     doors = []
     torches = []
+    collapsing_floors = []
     player_spawns = []
     max_used_col = 0
     max_used_row = 0
     map_cells = {}
 
-    with open(map_file, 'r') as f:
+    with open(map_file, 'r', encoding='utf-8-sig', newline='') as f:
         reader = csv.reader(f)
         for r, row in enumerate(reader):
             for c, cell in enumerate(row):
@@ -146,6 +146,8 @@ def build_world(object_defs, map_file):
                 elif object_type == 'decoration':
                     # Animated decoration (e.g. torch); drawn per-frame, not solid.
                     torches.append((x, y, object_name))
+                elif object_type == 'hazard' and object_name == 'collapsing_floor':
+                    collapsing_floors.append((x, y))
                 elif object_type == 'player':
                     # Keep player underlay visual-only; do not add to barriers.
                     background.append((x, y, PLAYER_BASE_TILE))
@@ -171,6 +173,7 @@ def build_world(object_defs, map_file):
         gems,
         doors,
         torches,
+        collapsing_floors,
         player_spawns,
         world_width,
         world_height,
@@ -213,6 +216,7 @@ def draw_world(
     doors,
     door_open,
     torches,
+    collapsing_floors,
     torch_frames,
     torch_frame,
     player,
@@ -251,6 +255,11 @@ def draw_world(
             continue
         image = frames[torch_frame % len(frames)]
         screen.blit(image, (x - camera_x, y - camera_y))
+
+    for floor in collapsing_floors:
+        if floor.rect.right < view_left or floor.rect.left > view_right or floor.rect.bottom < view_top or floor.rect.top > view_bottom:
+            continue
+        screen.blit(floor.image, (floor.rect.x - camera_x, floor.rect.y - camera_y))
 
     for x, y, name in gems:
         if x < view_left or x > view_right or y < view_top or y > view_bottom:
@@ -323,6 +332,7 @@ def main(map_file=DEFAULT_MAP):
     env_images = enviromental_images()
     obj_images = object_images()
     torch_frames = load_torch_images()
+    collapsing_floor_images = load_collapsing_floor_images()
 
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("Tu es le canard")
@@ -336,11 +346,16 @@ def main(map_file=DEFAULT_MAP):
         gems,
         doors,
         torches,
+        collapsing_floor_positions,
         player_spawns,
         world_width,
         world_height,
         tile_map,
     ) = build_world(object_defs, map_file)
+    collapsing_floors = [
+        CollapsingFloor(x, y, collapsing_floor_images)
+        for x, y in collapsing_floor_positions
+    ]
     static_world, animated_tiles = build_static_world_surface(
         world_width,
         world_height,
@@ -362,11 +377,12 @@ def main(map_file=DEFAULT_MAP):
     camera_x = 0 
     camera_y = 0 
 
-    # Torch animation: advance one of the 6 frames every few ticks.
-    torch_tick = 0
-    TORCH_TICKS_PER_FRAME = 12
+    clock = pygame.time.Clock()
+    level_time = 0.0
 
     while True:
+        delta_seconds = min(clock.tick(FPS) / 1000.0, 0.05)
+        level_time += delta_seconds
         # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -374,17 +390,27 @@ def main(map_file=DEFAULT_MAP):
 
         # Handle user input
         keys = pygame.key.get_pressed()
-        player.handle_input(keys)
+        door_is_open = len(gems) == 0
+        active_barriers = barriers if door_is_open else barriers + doors
+        movments.barriers = active_barriers
+        player.handle_input(keys, delta_seconds)
 
         # Move enemies
         for enemy in enemies:
-            enemy.move()
+            enemy.move(delta_seconds)
 
         # Run interactions
         # First apply barrier collisions with current door state.
-        door_is_open = len(gems) == 0
-        active_barriers = barriers if door_is_open else barriers + doors
         player = interactions.barrier(player, active_barriers)
+        player.position.update(player.rect.center)
+
+        for floor in collapsing_floors:
+            if floor.rect.colliderect(player.rect):
+                floor.trigger()
+            floor.update(delta_seconds)
+            if floor.is_lethal and floor.rect.colliderect(player.rect):
+                print("GAME OVER")
+                return 'dead'
         alive, _hit_enemy = interactions.enemy(player, enemies)
         if not alive:
             print("GAME OVER")
@@ -408,10 +434,8 @@ def main(map_file=DEFAULT_MAP):
         camera_x = max(0, min(camera_x, max_camera_x))
         camera_y = max(0, min(camera_y, max_camera_y))
 
-        # Advance the shared torch animation frame.
-        torch_tick += 1
-        torch_frame = (torch_tick // TORCH_TICKS_PER_FRAME) % 6
-        time_seconds = pygame.time.get_ticks() / 1000.0
+        torch_frame = int(level_time * 8) % 6
+        time_seconds = level_time
 
         draw_world(
             screen,
@@ -422,6 +446,7 @@ def main(map_file=DEFAULT_MAP):
             doors,
             door_is_open,
             torches,
+            collapsing_floors,
             torch_frames,
             torch_frame,
             player,
@@ -436,8 +461,6 @@ def main(map_file=DEFAULT_MAP):
         # Update the display
         pygame.display.flip()
 
-        # Cap the frame rate with the shared global clock for consistent speed.
-        GAME_CLOCK.tick(FPS)
 
 
 

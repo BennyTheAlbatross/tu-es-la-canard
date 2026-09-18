@@ -1,5 +1,23 @@
 #tu es la canard 
 
+## Map editor
+
+Run the visual CSV editor with:
+
+```bash
+python3 map_editor.py
+```
+
+It opens `map1.csv` by default. Pass another map path to open it directly:
+
+```bash
+python3 map_editor.py maps/game/map4.csv
+```
+
+Blank CSV cells remain blank and are distinct from background object `0`. Hold the arrows, WASD, or Vim-style H/J/K/L keys to move continuously; moving beyond the right or bottom edge expands the map. Shift-H/J/K/L and the mouse wheel pan larger maps. Horizontal wheel gestures pan sideways, and Shift+vertical wheel is the fallback. Left-click and drag to paint continuously. Right-click and drag or press Delete to make cells blank. Q/E changes the catalogue selection.
+
+Press `:` for Vim-style commands: `:w`, `:q`, `:wq`, `:q!`, and `:e`. Press `?` to show or hide the complete controls overlay. The palette is loaded from `rules/objects.csv`, so new catalogue entries appear automatically.
+
 '''
 a dungon puzzle explorere, where you the duck enter hell and battle deamons. 
 a map and level build framework implimented in python & and clickly clickly excel. 
@@ -33,7 +51,3 @@ home/
 |
 |---launcher.py             # Main urnnng script
 |---README.MD               # repo instructions/ plan / this doc 
-
-
-
-

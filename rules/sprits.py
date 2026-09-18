@@ -122,3 +122,11 @@ def load_torch_images():
         frame = _make_black_transparent(frame)
         frames.append(frame)
     return {'torch': frames}
+
+def load_collapsing_floor_images():
+    return {
+        'intact': image_load_function('collapsing_floor_intact.png'),
+        'wobble': image_load_function('collapsing_floor_wobble.png'),
+        'cracked': image_load_function('collapsing_floor_cracked.png'),
+        'collapsed': image_load_function('collapsing_floor_collapsed.png'),
+    }
