@@ -1,5 +1,27 @@
 #tu es la canard 
 
+## Run the game
+
+```bash
+python3 runtime/main_menu.py
+```
+
+Choose a level, then play the same CSV map in either the 2D or ray-cast mode.
+
+### Controls
+
+- Arrow keys: move in 2D
+- WASD / arrows / mouse: move and turn in ray-cast mode
+- Space: toggle the player's torch
+- M: toggle music
+- Enter: select menu item
+- Escape: return or quit
+
+Raising the torch increases visibility, slows the duck, and makes every demon
+1.5x faster. Nearby hidden doors are permanently opened when revealed. One-way
+gate arrows show the direction the duck may travel. Map 5 is a complete puzzle
+level demonstrating gates, a hidden torch door, demons, and collapsing floors.
+
 ## Map editor
 
 Run the visual CSV editor with:

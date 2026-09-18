@@ -21,6 +21,10 @@ class MapObject:
     y: float
     active: bool = True
     direction: int = 1
+    state: str = "intact"
+    state_elapsed: float = 0.0
+    animation_frame: int = 0
+    animation_elapsed: float = 0.0
 
 
 @dataclass
@@ -42,6 +46,9 @@ class Level:
         if x < 0 or y < 0 or x >= self.width or y >= self.height:
             return None
         return self.definitions.get(self.grid[y][x])
+
+    def objects_at(self, x, y):
+        return [obj for obj in self.objects if int(obj.x) == x and int(obj.y) == y]
 
 
 def load_definitions(path):
@@ -87,7 +94,9 @@ def load_level(map_path, objects_path):
             if definition.object_type == "player":
                 spawn = (x, y)
                 grid[row_index][column_index] = 0
-            elif definition.object_type in {"enemy", "gem", "decoration", "door"}:
+            elif definition.object_type in {
+                "enemy", "gem", "decoration", "door", "gate", "hidden_door", "hazard"
+            }:
                 objects.append(MapObject(definition, x, y))
                 if definition.object_type != "door":
                     grid[row_index][column_index] = 0

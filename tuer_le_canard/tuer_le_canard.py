@@ -1,9 +1,22 @@
 import math
+import argparse
 from pathlib import Path
 
 import pygame
 
-from game_data import load_level
+try:
+    from .game_data import load_level
+except ImportError:
+    from game_data import load_level
+
+try:
+    from rules.gates import gate_allows
+    from rules import music as game_music
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from rules.gates import gate_allows
+    from rules import music as game_music
 
 
 ROOT = Path(__file__).resolve().parent
@@ -20,6 +33,9 @@ TURN_SPEED = 2.0
 MOUSE_SENSITIVITY = 0.0025
 PLAYER_RADIUS = 0.18
 MAX_VIEW_DISTANCE = 20.0
+TORCH_VIEW_DISTANCE = 30.0
+TORCH_MOVE_MULTIPLIER = 0.65
+TORCH_ENEMY_MULTIPLIER = 1.5
 ENEMY_SPEEDS = {
     "enemy_fire": 1.8,
     "enemy_water": 1.2,
@@ -43,6 +59,12 @@ SPRITE_ASSETS = {
     "gem_ruby": "gem_red.png",
     "gem_sapphire": "gem_red.png",
     "torch": "torch/torch_red_1.png",
+    "one_way_up": "generated/gates_hidden_door_sheet.png",
+    "one_way_right": "generated/gates_hidden_door_sheet.png",
+    "one_way_down": "generated/gates_hidden_door_sheet.png",
+    "one_way_left": "generated/gates_hidden_door_sheet.png",
+    "hidden_door": "generated/gates_hidden_door_sheet.png",
+    "collapsing_floor": "collapsing_floor_intact.png",
 }
 
 
@@ -58,7 +80,32 @@ def load_assets():
         for name, path in WALL_ASSETS.items()
     }
     sprites = {name: load_image(path) for name, path in SPRITE_ASSETS.items()}
+    sprites["enemy_fire"] = split_sheet(load_image("generated/enemy_fire_sheet.png"), 4, 1)[0]
+    sprites["enemy_water"] = split_sheet(load_image("generated/enemy_water_sheet.png"), 4, 1)[0]
+    mechanics = split_sheet(load_image("generated/gates_hidden_door_sheet.png"), 3, 2)
+    sprites.update({
+        "one_way_up": mechanics[0][0], "one_way_right": mechanics[0][1],
+        "one_way_down": mechanics[0][2], "one_way_left": mechanics[1][0],
+        "hidden_door": mechanics[1][1],
+    })
+    sprites["collapsing_floor"] = {
+        state: load_image(f"collapsing_floor_{state}.png")
+        for state in ("intact", "wobble", "cracked", "collapsed")
+    }
     return walls, sprites
+
+
+def split_sheet(sheet, columns, rows):
+    output = []
+    for row in range(rows):
+        frames = []
+        top, bottom = round(row * sheet.get_height() / rows), round((row + 1) * sheet.get_height() / rows)
+        for column in range(columns):
+            left, right = round(column * sheet.get_width() / columns), round((column + 1) * sheet.get_width() / columns)
+            frame = sheet.subsurface((left, top, right - left, bottom - top)).copy()
+            frames.append(pygame.transform.smoothscale(frame, (128, 128)))
+        output.append(frames)
+    return output
 
 
 def door_is_open(level):
@@ -74,22 +121,34 @@ def cell_blocks(level, map_x, map_y):
         return True
     if definition.object_type == "door":
         return not door_is_open(level)
+    for obj in level.objects_at(map_x, map_y):
+        if obj.active and obj.definition.object_type == "hidden_door":
+            return True
     return definition.object_type == "barrier" or definition.solid
 
 
-def can_stand(level, x, y):
+def can_stand(level, x, y, old_x=None, old_y=None):
     for offset_x, offset_y in (
         (-PLAYER_RADIUS, -PLAYER_RADIUS),
         (PLAYER_RADIUS, -PLAYER_RADIUS),
         (-PLAYER_RADIUS, PLAYER_RADIUS),
         (PLAYER_RADIUS, PLAYER_RADIUS),
     ):
-        if cell_blocks(level, int(x + offset_x), int(y + offset_y)):
+        cell_x, cell_y = int(x + offset_x), int(y + offset_y)
+        if cell_blocks(level, cell_x, cell_y):
             return False
+        if old_x is not None:
+            candidates = level.objects_at(cell_x, cell_y) + level.objects_at(int(old_x), int(old_y))
+            if any(
+                obj.definition.object_type == "gate"
+                and not gate_allows(obj.definition.name, x - old_x, y - old_y)
+                for obj in candidates
+            ):
+                return False
     return True
 
 
-def move_player(level, position, direction, delta_seconds, keys):
+def move_player(level, position, direction, delta_seconds, keys, speed_multiplier=1.0):
     forward = float(keys[pygame.K_w] or keys[pygame.K_UP]) - float(keys[pygame.K_s] or keys[pygame.K_DOWN])
     strafe = float(keys[pygame.K_d]) - float(keys[pygame.K_a])
     length = math.hypot(forward, strafe)
@@ -99,17 +158,19 @@ def move_player(level, position, direction, delta_seconds, keys):
 
     direction_x, direction_y = math.cos(direction), math.sin(direction)
     right_x, right_y = -direction_y, direction_x
-    distance = MOVE_SPEED * delta_seconds
+    distance = MOVE_SPEED * speed_multiplier * delta_seconds
     target_x = position[0] + (direction_x * forward + right_x * strafe) * distance
     target_y = position[1] + (direction_y * forward + right_y * strafe) * distance
 
-    if can_stand(level, target_x, position[1]):
+    if can_stand(level, target_x, position[1], position[0], position[1]):
         position[0] = target_x
-    if can_stand(level, position[0], target_y):
+    if can_stand(level, position[0], target_y, position[0], position[1]):
         position[1] = target_y
 
 
 def enemy_blocked_by(level, enemy, x, y):
+    if any(obj.definition.object_type == "hidden_door" for obj in level.objects_at(int(x), int(y))):
+        return True
     definition = level.definition_at(int(x), int(y))
     if definition is None:
         return True
@@ -120,7 +181,7 @@ def enemy_blocked_by(level, enemy, x, y):
     return definition.name in blocked_names
 
 
-def update_enemies(level, delta_seconds):
+def update_enemies(level, delta_seconds, speed_multiplier=1.0):
     for enemy in level.objects:
         if (
             not enemy.active
@@ -130,7 +191,7 @@ def update_enemies(level, delta_seconds):
             continue
 
         speed = ENEMY_SPEEDS.get(enemy.definition.name, 1.0)
-        distance = speed * delta_seconds * enemy.direction
+        distance = speed * speed_multiplier * delta_seconds * enemy.direction
         if enemy.definition.name == "enemy_rock":
             target_x, target_y = enemy.x, enemy.y + distance
         else:
@@ -141,6 +202,10 @@ def update_enemies(level, delta_seconds):
         else:
             enemy.x = target_x
             enemy.y = target_y
+        enemy.animation_elapsed += delta_seconds
+        if enemy.animation_elapsed >= 0.12:
+            enemy.animation_elapsed %= 0.12
+            enemy.animation_frame = (enemy.animation_frame + 1) % 4
 
 
 def cast_ray(level, player_x, player_y, ray_direction_x, ray_direction_y):
@@ -199,7 +264,7 @@ def cached_wall_strip(cache, texture_name, texture, texture_x, height, darkness)
     return strip
 
 
-def render_world(surface, level, position, direction, walls, wall_cache):
+def render_world(surface, level, position, direction, walls, wall_cache, torch_active=False):
     width, height = surface.get_size()
     surface.fill((22, 18, 24))
     pygame.draw.rect(surface, (38, 25, 24), (0, height // 2, width, height // 2))
@@ -224,7 +289,8 @@ def render_world(surface, level, position, direction, walls, wall_cache):
         texture_name = definition.name if definition else "border"
         texture = walls.get(texture_name, walls["border"])
         texture_x = min(texture.get_width() - 1, int(wall_x * texture.get_width()))
-        darkness = min(220, int(distance * 15) + (22 if side else 0))
+        darkness_scale = 9 if torch_active else 15
+        darkness = min(220, int(distance * darkness_scale) + (22 if side else 0))
         strip = cached_wall_strip(
             wall_cache,
             texture_name,
@@ -266,9 +332,16 @@ def render_sprites(surface, level, position, camera, depth_buffer, sprite_images
         image = sprite_images.get(obj.definition.name)
         if image is None:
             continue
+        frame_key = 0
+        if isinstance(image, list):
+            frame_key = obj.animation_frame % len(image)
+            image = image[frame_key]
+        elif isinstance(image, dict):
+            frame_key = obj.state
+            image = image.get(obj.state, next(iter(image.values())))
         darkness = min(205, int(transform_y * 15))
         shade = darkness // 16 * 16
-        cache_key = (obj.definition.name, sprite_size, shade)
+        cache_key = (obj.definition.name, frame_key, sprite_size, shade)
         scaled = sprite_cache.get(cache_key)
         if scaled is None:
             scaled = pygame.transform.scale(image, (sprite_size, sprite_size)).copy()
@@ -295,22 +368,44 @@ def process_objects(level, position):
             obj.active = False
         elif obj.definition.object_type == "enemy" and obj.definition.kills_player and distance < 0.38:
             return "dead"
+        elif obj.definition.object_type == "hazard" and obj.state == "collapsed" and distance < 0.5:
+            return "dead"
         elif obj.definition.object_type == "door" and door_is_open(level) and distance < 0.5:
             return "won"
     return None
 
 
-def draw_hud(screen, level, font, fps, render_size):
+def update_special_objects(level, position, delta_seconds, torch_active):
+    for obj in level.objects:
+        distance = math.hypot(obj.x - position[0], obj.y - position[1])
+        if obj.definition.object_type == "hidden_door" and obj.active:
+            if torch_active and distance <= 5.25:
+                obj.active = False
+        elif obj.definition.object_type == "hazard" and obj.definition.name == "collapsing_floor":
+            if obj.state == "intact" and distance < 0.48:
+                obj.state = "wobble"
+                obj.state_elapsed = 0.0
+            if obj.state != "intact":
+                obj.state_elapsed += delta_seconds
+                duration = {"wobble": 0.65, "cracked": 0.45, "collapsed": 3.0}[obj.state]
+                if obj.state_elapsed >= duration:
+                    obj.state_elapsed = 0.0
+                    obj.state = {"wobble": "cracked", "cracked": "collapsed", "collapsed": "intact"}[obj.state]
+
+
+def draw_hud(screen, level, font, fps, render_size, torch_active):
     gems = sum(obj.active and obj.definition.object_type == "gem" for obj in level.objects)
     message = (
         f"Gems: {gems}   {fps:.0f} FPS   Render: {render_size[0]}x{render_size[1]}   "
+        f"Torch: {'UP' if torch_active else 'down'}   Space toggle   "
         "WASD move   Mouse/Arrows turn   F11 fullscreen   -/+ quality   Esc quit"
     )
     screen.blit(font.render(message, True, (245, 225, 185)), (12, 10))
 
 
-def main():
+def main(map_path=None):
     pygame.init()
+    game_music.play()
     screen = pygame.display.set_mode(SCREEN_SIZE)
     pygame.display.set_caption("Tuer le canard")
     render_quality = DEFAULT_RENDER_QUALITY
@@ -321,8 +416,9 @@ def main():
     pygame.mouse.set_visible(False)
     pygame.mouse.get_rel()
 
+    selected_map = Path(map_path) if map_path else SOURCE_PROJECT / "maps/game/raycaster.csv"
     level = load_level(
-        SOURCE_PROJECT / "maps/game/raycaster.csv",
+        selected_map,
         SOURCE_PROJECT / "rules/objects.csv",
     )
     walls, sprites = load_assets()
@@ -332,6 +428,7 @@ def main():
     fullscreen = False
     wall_cache = {}
     sprite_cache = {}
+    torch_active = False
 
     while status is None:
         delta_seconds = min(clock.tick(60) / 1000.0, 0.05)
@@ -347,6 +444,10 @@ def main():
                 render_surface = pygame.Surface(RENDER_SIZES[render_quality]).convert()
                 wall_cache.clear()
                 sprite_cache.clear()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                torch_active = not torch_active
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_m:
+                game_music.toggle()
             elif event.type == pygame.KEYDOWN and event.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
                 render_quality = min(len(RENDER_SIZES) - 1, render_quality + 1)
                 render_surface = pygame.Surface(RENDER_SIZES[render_quality]).convert()
@@ -357,12 +458,16 @@ def main():
         mouse_delta_x, _mouse_delta_y = pygame.mouse.get_rel()
         direction += mouse_delta_x * MOUSE_SENSITIVITY
         direction += (float(keys[pygame.K_RIGHT]) - float(keys[pygame.K_LEFT])) * TURN_SPEED * delta_seconds
-        move_player(level, position, direction, delta_seconds, keys)
-        update_enemies(level, delta_seconds)
+        move_player(
+            level, position, direction, delta_seconds, keys,
+            TORCH_MOVE_MULTIPLIER if torch_active else 1.0,
+        )
+        update_enemies(level, delta_seconds, TORCH_ENEMY_MULTIPLIER if torch_active else 1.0)
+        update_special_objects(level, position, delta_seconds, torch_active)
         status = process_objects(level, position)
 
         depth_buffer, camera = render_world(
-            render_surface, level, position, direction, walls, wall_cache
+            render_surface, level, position, direction, walls, wall_cache, torch_active
         )
         render_sprites(
             render_surface,
@@ -374,12 +479,22 @@ def main():
             sprite_cache,
         )
         screen.blit(pygame.transform.scale(render_surface, screen.get_size()), (0, 0))
-        draw_hud(screen, level, font, clock.get_fps(), render_surface.get_size())
+        if torch_active:
+            glow = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+            pygame.draw.circle(glow, (255, 175, 65, 34), (screen.get_width() // 2, screen.get_height()), screen.get_height())
+            screen.blit(glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+        draw_hud(screen, level, font, clock.get_fps(), render_surface.get_size(), torch_active)
         pygame.display.flip()
 
+    pygame.event.set_grab(False)
+    pygame.mouse.set_visible(True)
     pygame.quit()
     print(status.upper())
+    return status
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Play Tu es le canard in ray-cast mode")
+    parser.add_argument("map", nargs="?", help="CSV map to load")
+    arguments = parser.parse_args()
+    main(arguments.map)

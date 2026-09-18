@@ -11,3 +11,328 @@ then maybe a new wall tile that can be only seen/passed through whilst eh light 
 5) in the main menu. i want it better. i want all level to be playable in either ray casted or 2d version. 
 
 
+======================================================================
+IMPLEMENTATION PLAN FOR REVIEW (2026-09-18)
+======================================================================
+
+This is a planning pass only. No game behaviour will be changed until this
+plan and the questions at the end are approved.
+
+
+CURRENT PROJECT STATE
+---------------------
+
+1. The 2D game already loads every .csv file in maps/game/ from its menu.
+2. The ray-cast game currently always loads maps/game/raycaster.csv.
+3. Both modes already share rules/objects.csv, the maps, and most artwork.
+4. Object ID 15 and the complete 2D collapsing-floor feature already exist.
+5. The 2D game has delta-time movement, animated lava and torches, animated
+   rock demons, a darkness overlay, and a small permanent player light.
+6. Fire and water demons each currently use one static image.
+7. The duck changes image by direction but has no timed walk/idle animation.
+8. The existing launcher starts the ray-cast game as a separate process, so it
+   cannot currently pass the selected level to it or receive its win/death
+   result cleanly.
+
+
+DESIGN PRINCIPLES
+-----------------
+
+- A level remains one CSV file that can be opened in either mode.
+- Object IDs and gameplay meaning remain centralized in rules/objects.csv.
+- Mode-specific drawing stays separate from shared gameplay rules.
+- New timers use elapsed seconds, not frame counts.
+- Features will be delivered in small phases and tested before the next phase.
+- Existing maps remain playable while new mechanics are introduced.
+
+
+PHASE 1: CLEAN LEVEL AND MODE LAUNCHING
+----------------------------------------
+
+Goal: select a level once, then select either 2D or ray-cast mode.
+
+1. Refactor runtime/main_menu.py into explicit screens:
+   - Main menu: Play, Map Editor, Quit.
+   - Level selection: list all valid maps/game/*.csv maps.
+   - Mode selection for the chosen map: 2D or Ray-cast.
+   - Back/Escape navigation on every submenu.
+2. Improve presentation with a clear title, selected-item panel, controls hint,
+   current level name, and animated decorative torches.
+3. Change tuer_le_canard/tuer_le_canard.py so main() accepts a map path instead
+   of hard-coding raycaster.csv.
+4. Prefer launching the ray-cast main() directly from the menu. If keeping it
+   isolated is necessary because of display/mouse state, pass the absolute map
+   path as a command-line argument and wait for a clean exit.
+5. Restore the 800x400 menu display, caption, mouse visibility, and input grab
+   after returning from either game mode.
+6. Filter out maps that cannot run (for example, no duck spawn), and display a
+   readable menu error rather than crashing.
+
+Acceptance checks:
+- Every listed level can be started in both modes.
+- Returning from either mode restores the menu correctly.
+- Level selection never silently switches to raycaster.csv.
+- Map paths work regardless of the directory used to launch the program.
+
+
+PHASE 2: ONE-WAY GATE
+---------------------
+
+Goal: add a map object that the duck may cross in exactly one allowed direction.
+
+1. Reserve four object IDs in rules/objects.csv, one for each allowed direction:
+   one_way_up, one_way_down, one_way_left, and one_way_right. Four IDs make the
+   direction visible in the map editor and avoid hiding map-specific direction
+   data in Python.
+2. Add one gate base asset and rotate/flip it at load time for the four variants,
+   unless four hand-drawn directional assets look clearer.
+3. Add a small shared direction/collision helper that checks the player's old
+   position, requested movement, and gate rectangle/cell. The player may enter
+   only while moving in the arrow's allowed direction.
+4. In 2D, resolve the forbidden side like a barrier without trapping a player
+   who is already overlapping the tile.
+5. In ray-cast mode, use the same direction rule in can_stand()/move_player().
+   Render the gate as a billboard or thin transparent gate so the permitted
+   route remains visually understandable.
+6. Decide explicitly whether demons obey gates; the recommended first version
+   applies gates only to the player.
+7. Add each gate direction to the map editor automatically through objects.csv.
+
+Acceptance checks:
+- Each of the four variants permits crossing only in its configured direction.
+- Approaching diagonally cannot bypass the gate.
+- Turning around while overlapping does not trap or teleport the player.
+- Behaviour matches in 2D and ray-cast modes.
+
+
+PHASE 3: DUCK, FIRE-DEMON, AND WATER-DEMON ANIMATION
+----------------------------------------------------
+
+Goal: replace static sprite switching with time-based animation.
+
+1. Define a consistent animation structure: entity -> state -> direction ->
+   frame list. At minimum use idle and walk/move states.
+2. Duck:
+   - Use front/back/left/right directional cycles.
+   - Advance frames only while moving.
+   - Return to an idle frame when movement stops.
+   - Preserve the smaller collision rectangle while centering every visual
+     frame over it, preventing animation size from changing collision.
+3. Fire and water demons:
+   - Add looping movement/idle frames.
+   - Flip horizontal frames when appropriate rather than duplicating artwork.
+   - Make animation timing independent from movement speed.
+4. Extend rules/sprits.py to load each sequence once when a level starts.
+5. Update enemy and duck classes to track animation state, elapsed time, and
+   frame index.
+6. In ray-cast mode, select the current animated frame before billboard scaling
+   and include frame number in the sprite cache key.
+7. Keep gameplay hitboxes unchanged.
+
+Asset work:
+- Reuse the existing duck walk frames where possible, then identify missing
+  front/back transition frames.
+- Fire/water currently have only one image each, so new frames must be drawn or
+  generated in the established pixel-art style and reviewed before integration.
+
+Acceptance checks:
+- Animations run at the same apparent speed at different frame rates.
+- Idle entities do not slide through walking cycles.
+- Facing matches movement direction.
+- Sprite animation does not alter collisions or cause visual jumping.
+- Animated enemies render correctly in both modes.
+
+
+PHASE 4: PLAYER TORCH AND RISK/REWARD RULE
+------------------------------------------
+
+Goal: holding a torch improves visibility while making demons faster.
+
+Recommended first version:
+- Hold a key to raise the torch; release it to lower the torch.
+- The torch works while moving (unless the answer below requests stationary
+  use).
+- It has no fuel meter initially.
+- A short 0.15-second transition prevents rapid input flicker.
+
+  no i want a toggle. 
+
+  can be instant on off 
+
+  also add new "hidden door" - looks like regular stone?/ wood? but when torch active it revile the door. 
+
+Implementation:
+1. Add a TorchState owned by the active game session: raised/lowered,
+   transition progress, visibility multiplier, and demon speed multiplier.
+2. Add the chosen control to both game modes and show it in the menu/HUD hints.
+3. 2D lighting:
+   - Keep a very small base glow when lowered.
+   - While raised, increase the duck's light radius and strength.
+   - Draw a torch/flame sprite attached to or just ahead of the duck.
+4. Ray-cast lighting:
+   - Increase maximum visible distance and reduce distance darkness when raised.
+   - Add a subtle warm screen/weapon torch sprite so the state is obvious.
+5. Pass torch state into enemy movement. Multiply fire, water, and rock movement
+   speed while the torch is raised; restore exact base speed on release.
+6. Centralize the multiplier so it cannot compound every frame.
+7. Suggested starting balance for playtesting:
+   - Normal 2D light radius: 100 px.
+   - Raised radius: 210 px.
+   - Ray-cast view distance: 20 cells normal, 30 cells raised.
+   - All demon speeds: 1.5x while raised.
+
+Acceptance checks:
+- Visibility changes immediately and clearly in both modes.
+- Demon speed is exactly normal after lowering the torch.
+- Repeatedly pressing the control never stacks speed multipliers.
+- Death, restart, level change, and returning to the menu reset torch state.
+
+
+PHASE 5: LIGHT-REVEALED PASSAGE
+--------------------------------
+
+Goal: add a special wall/passage whose state depends on the player's torch.
+
+Recommended rule for clarity:
+- Torch lowered: it looks like a solid wall and blocks the player.
+- Torch raised: glowing markings reveal it as a passage; it becomes traversable.
+- Demons always treat it as a wall so their routes remain predictable.
+
+1. Add a new object definition and distinctive dark-wall/glowing-wall assets.
+2. Make collision depend on torch state in both movement systems.
+3. In 2D, draw the solid image when dark and the revealed floor/arch image when
+   lit. Change state only after collision resolution so lowering the torch while
+   inside cannot embed the duck in a wall.
+4. In ray-cast mode, treat the tile as ray-blocking while dark. While lit, rays
+   pass through and a translucent billboard/edge marker indicates the opening.
+5. Define safe behaviour when the torch is lowered while the player occupies
+   the passage: keep that specific tile open until the player exits, then close.
+6. Add a small test route with one optional shortcut before redesigning levels.
+
+Acceptance checks:
+- The passage is discoverable when lit and convincingly wall-like when dark.
+- Lowering the torch inside never traps or kills the player.
+- Rays and physical collision agree in first-person mode.
+- Enemy pathing remains stable when the state changes.
+
+
+PHASE 6: FEATURE PARITY FOR EXISTING SPECIAL OBJECTS
+----------------------------------------------------
+
+Goal: ensure "every level in either mode" is truthful, not merely launchable.
+
+1. Add collapsing-floor support to ray-cast mode using the existing shared ID 15
+   timing/state rules. Represent the changing floor with a visible ground marker
+   or billboard until textured ray-cast floors exist.
+2. Confirm animated lava, doors, gems, static torches, and all three enemies
+   preserve their gameplay meaning in both modes.
+3. Keep mode-specific presentation separate, but share state transitions and
+   constants where practical.
+4. Add graceful fallback visuals for an object that has no mode-specific asset,
+   and report it during loading instead of making it invisible.
+
+Acceptance checks:
+- A feature matrix for every objects.csv entry passes in both modes.
+- No level becomes unwinnable solely because it is opened in the other mode.
+
+
+PHASE 7: LEVEL AND BALANCE PASS
+-------------------------------
+
+1. Create a small mechanics test map containing:
+   - Four one-way gate directions.
+   - Fire/water/rock demons.
+   - A torch-revealed passage.
+   - A collapsing-floor bridge.
+   - Gems and a finish door.
+2. Tune light size, demon speed multiplier, gate collision, and animation timing
+   on this map first.
+3. Only after mechanics stabilize, place them into normal levels.
+4. Verify every modified CSV in both modes and update its corresponding source
+   spreadsheet where one exists.
+
+yes you can create a full level using the new abililtyes, items, light toggle feater, use GTP 6 model for this please. 
+
+IMPLEMENTATION ORDER AND REVIEW POINTS
+--------------------------------------
+
+Review A: approve this plan and answer the questions below.
+Review B: approve new/updated sprite sheets before animation integration.
+Review C: play the mechanics test map and tune values.
+Review D: approve the main-level changes.
+
+Planned code order:
+1. Menu and arbitrary-map ray-cast loading.
+2. Shared one-way-gate rule and assets.
+3. Animation framework and sprite assets.
+4. Torch state, lighting, and demon speed risk.
+5. Light-revealed passage.
+6. Ray-cast parity for collapsing floors and remaining objects.
+7. Test map, automated checks, playtesting, then level placement.
+
+
+TEST STRATEGY
+-------------
+
+1. Add logic tests for gate direction decisions, torch speed multipliers,
+   torch-passage collision, animation frame advancement, and timed hazard states.
+2. Add loader tests that open every map with every known object ID.
+3. Run Python compile/import checks after every phase.
+4. Run headless Pygame smoke tests for both modes where possible.
+5. Perform manual visual playtests for lighting, collision edges, animation,
+   first-person readability, menu return behaviour, and overall difficulty.
+
+
+QUESTIONS TO ANSWER BEFORE IMPLEMENTATION
+-----------------------------------------
+
+Q1. For a one-way gate, should the arrow mean "you may move in this direction"
+    (recommended), or should it show the direction that is blocked?
+yes
+Q2. Should one-way gates affect only the duck (recommended), or demons too?
+only duck
+Q3. Should the torch be active only while a key is held (recommended), or toggle
+    on/off with one press? Which key do you want? Recommended: Space.
+toggle (also update sptrie to have a touch overlay, or maybe just simple extra glow )
+Q4. Can the duck walk while holding the torch (recommended), or must the duck
+    stand still as mentioned in the older notes.md idea?
+no but lets slow the movment speed of the duck whilst list is active
+Q5. Should the torch have unlimited use (recommended first version), a fuel
+    meter, or collectible charges?
+unlimited for now. 
+Q6. Should every demon become 1.5x faster in torchlight, or should each demon
+    have its own reaction/speed multiplier?
+yes
+Q7. For the special wall, confirm the recommended behaviour: solid and visible
+    when dark; revealed and passable while the player's torch is raised.
+can pnly pass thorugh with torch, (but once open its open)
+Q8. May new fire/water/duck animation frames be generated to match the current
+    pixel art, or will you provide/draw the final art?
+you generate it 
+Q9. Should maps/game/raycaster.csv remain a normal selectable level, be renamed,
+    or be treated as a development/test map?
+can be renamed what ever teh next number is 
+Q10. Does "all levels" include experimental raycaster.csv and any future test
+     maps, or only numbered release maps (map1, map2, map3, map4)?
+keep ray caster, 
+
+and make one your self with modle astra gtp6
+
+
+IMPLEMENTATION STATUS (2026-09-18)
+----------------------------------
+
+Implemented:
+- New Play -> Level -> 2D/Ray-cast menu flow.
+- Arbitrary CSV map loading in ray-cast mode.
+- Four one-way gate objects (IDs 16-19); arrows show allowed direction and only
+  affect the duck.
+- Generated four-frame fire and water demon animation sheets.
+- Generated directional duck walk cycles and torch pose cycle.
+- Space toggles an unlimited torch instantly.
+- Active torch increases visibility, slows the duck to 65%, and makes all
+  demons 1.5x faster.
+- Hidden door object (ID 20) permanently opens when revealed by nearby torch.
+- Gates, hidden doors, animation, and collapsing floors work in both modes.
+- GPT-6 Astra designed maps/game/map5.csv around all new mechanics.
+- Automated object/map/gate tests and headless smoke rendering pass.

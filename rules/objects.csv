@@ -15,3 +15,8 @@ object_number,object_name,object_type_code,object_type,object_class,solid,moveme
 13,end_door,13,door,open_door,no,no,no,,
 14,torch,14,decoration,torch,no,no,no,,
 15,collapsing_floor,15,hazard,collapsing_floor,no,no,yes,collapse_delay:1.1,collapsing_floor_intact.png
+16,one_way_up,16,gate,up,no,no,no,allows:up,generated/gates_hidden_door_sheet.png
+17,one_way_right,17,gate,right,no,no,no,allows:right,generated/gates_hidden_door_sheet.png
+18,one_way_down,18,gate,down,no,no,no,allows:down,generated/gates_hidden_door_sheet.png
+19,one_way_left,19,gate,left,no,no,no,allows:left,generated/gates_hidden_door_sheet.png
+20,hidden_door,20,hidden_door,hidden_door,yes,no,no,reveal_with_torch_permanent,generated/gates_hidden_door_sheet.png

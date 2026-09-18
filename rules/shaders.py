@@ -205,13 +205,15 @@ def collect_object_lights(
                 time_seconds * PLAYER_GLOW_PULSE_SPEED
             ) * PLAYER_GLOW_PULSE_AMOUNT
 
+            radius = object_value(game_object, "light_radius", PLAYER_GLOW_RADIUS)
+            strength = object_value(game_object, "light_strength", PLAYER_GLOW_STRENGTH)
             lights.append(
                 LightSource(
                     x=x,
                     y=y,
-                    radius=PLAYER_GLOW_RADIUS + pulse,
+                    radius=radius + pulse,
                     colour=PLAYER_GLOW_COLOUR,
-                    strength=PLAYER_GLOW_STRENGTH,
+                    strength=strength,
                 )
             )
 

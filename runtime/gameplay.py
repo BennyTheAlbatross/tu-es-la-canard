@@ -14,6 +14,7 @@ from rules.sprits import (
     load_enemy_images,
     load_torch_images,
     load_collapsing_floor_images,
+    load_mechanic_images,
     load_enviromental_images as enviromental_images,
     load_object_images as object_images,
 )
@@ -22,6 +23,7 @@ from rules.hazards import CollapsingFloor
 import rules.movments as movments 
 from rules import interactions
 from rules import shaders
+from rules import music as game_music
 
 
 #constants 
@@ -84,6 +86,8 @@ def build_world(object_defs, map_file):
     enemies = []
     doors = []
     torches = []
+    gates = []
+    hidden_doors = []
     collapsing_floors = []
     player_spawns = []
     max_used_col = 0
@@ -148,6 +152,11 @@ def build_world(object_defs, map_file):
                     torches.append((x, y, object_name))
                 elif object_type == 'hazard' and object_name == 'collapsing_floor':
                     collapsing_floors.append((x, y))
+                elif object_type == 'gate':
+                    background.append((x, y, 'background'))
+                    gates.append((x, y, object_name))
+                elif object_type == 'hidden_door':
+                    hidden_doors.append({'x': x, 'y': y, 'open': False})
                 elif object_type == 'player':
                     # Keep player underlay visual-only; do not add to barriers.
                     background.append((x, y, PLAYER_BASE_TILE))
@@ -174,6 +183,8 @@ def build_world(object_defs, map_file):
         doors,
         torches,
         collapsing_floors,
+        gates,
+        hidden_doors,
         player_spawns,
         world_width,
         world_height,
@@ -181,7 +192,7 @@ def build_world(object_defs, map_file):
     )
 
 
-def build_static_world_surface(world_width, world_height, background, barriers, env_images):
+def build_static_world_surface(world_width, world_height, background, barriers, gates, env_images, mechanic_images):
     # Pre-render static tile layers once and only draw dynamic objects every frame.
     static_world = pygame.Surface((world_width, world_height)).convert()
     static_world.fill((0, 0, 0))
@@ -203,6 +214,9 @@ def build_static_world_surface(world_width, world_height, background, barriers, 
             continue
         static_world.blit(image, (x, y))
 
+    for x, y, name in gates:
+        static_world.blit(mechanic_images[name], (x, y))
+
     return static_world, animated_tiles
     
 
@@ -217,6 +231,8 @@ def draw_world(
     door_open,
     torches,
     collapsing_floors,
+    hidden_doors,
+    mechanic_images,
     torch_frames,
     torch_frame,
     player,
@@ -261,6 +277,13 @@ def draw_world(
             continue
         screen.blit(floor.image, (floor.rect.x - camera_x, floor.rect.y - camera_y))
 
+    for door in hidden_doors:
+        x, y = door['x'], door['y']
+        if x < view_left or x > view_right or y < view_top or y > view_bottom:
+            continue
+        key = 'hidden_door_open' if door['open'] else 'hidden_door_closed'
+        screen.blit(mechanic_images[key], (x - camera_x, y - camera_y))
+
     for x, y, name in gems:
         if x < view_left or x > view_right or y < view_top or y > view_bottom:
             continue
@@ -299,6 +322,8 @@ def draw_world(
             {
                 'object_number': shaders.DUCK,
                 'rect': player.rect,
+                'light_radius': 210 if player.torch_active else 70,
+                'light_strength': 330 if player.torch_active else 220,
             }
         ]
 
@@ -326,6 +351,7 @@ def draw_world(
 
 def main(map_file=DEFAULT_MAP):
     pygame.init()
+    game_music.play()
 
     duck_images = load_duck_images()
     enemy_images = load_enemy_images()
@@ -333,6 +359,7 @@ def main(map_file=DEFAULT_MAP):
     obj_images = object_images()
     torch_frames = load_torch_images()
     collapsing_floor_images = load_collapsing_floor_images()
+    mechanic_images = load_mechanic_images()
 
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("Tu es le canard")
@@ -347,6 +374,8 @@ def main(map_file=DEFAULT_MAP):
         doors,
         torches,
         collapsing_floor_positions,
+        gates,
+        hidden_doors,
         player_spawns,
         world_width,
         world_height,
@@ -361,7 +390,9 @@ def main(map_file=DEFAULT_MAP):
         world_height,
         background,
         barriers,
+        gates,
         env_images,
+        mechanic_images,
     )
     effects = shaders.EnvironmentEffects(
         tile_map=tile_map,
@@ -387,17 +418,42 @@ def main(map_file=DEFAULT_MAP):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return 'quit'
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return 'quit'
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                player.set_torch(not player.torch_active)
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_m:
+                game_music.toggle()
 
         # Handle user input
         keys = pygame.key.get_pressed()
         door_is_open = len(gems) == 0
-        active_barriers = barriers if door_is_open else barriers + doors
+        closed_hidden_doors = [
+            (door['x'], door['y'], 'hidden_door')
+            for door in hidden_doors if not door['open']
+        ]
+        active_barriers = barriers + closed_hidden_doors
+        if not door_is_open:
+            active_barriers += doors
         movments.barriers = active_barriers
+        movments.gates = gates
+        movments.enemy_barriers = barriers + [
+            (door['x'], door['y'], 'hidden_door') for door in hidden_doors
+        ]
         player.handle_input(keys, delta_seconds)
 
+        if player.torch_active:
+            reveal_radius_sq = 210 * 210
+            for hidden_door in hidden_doors:
+                dx = hidden_door['x'] + TILE_SIZE[0] / 2 - player.rect.centerx
+                dy = hidden_door['y'] + TILE_SIZE[1] / 2 - player.rect.centery
+                if dx * dx + dy * dy <= reveal_radius_sq:
+                    hidden_door['open'] = True
+
         # Move enemies
+        demon_speed_multiplier = 1.5 if player.torch_active else 1.0
         for enemy in enemies:
-            enemy.move(delta_seconds)
+            enemy.move(delta_seconds, demon_speed_multiplier)
 
         # Run interactions
         # First apply barrier collisions with current door state.
@@ -447,6 +503,8 @@ def main(map_file=DEFAULT_MAP):
             door_is_open,
             torches,
             collapsing_floors,
+            hidden_doors,
+            mechanic_images,
             torch_frames,
             torch_frame,
             player,

@@ -28,23 +28,39 @@ def image_load_function(file_name):
     image.set_colorkey((0,0,0))
     return image
 
-def load_duck_images():
-    duck_front = image_load_function('duck_front.png')
-    duck_back = image_load_function('duck_back.png')
-    duck_right = image_load_function('duck_walk_1.png')
-    duck_left = image_load_function('duck_walk_2.png')  # this need to be inverted
-    duck_left = pygame.transform.flip(duck_left, True, False)  # flip the left image horizontally
 
+def _load_grid(file_name, columns, rows):
+    """Split a generated sheet using rounded boundaries, then scale each cell."""
+    # Assets are loaded before gameplay creates its display, so conversion here
+    # would fail on a fresh launch. Generated sheets already contain alpha.
+    sheet = pygame.image.load(os.path.join(ASSET_FOLDER, file_name))
+    frames = []
+    for row in range(rows):
+        row_frames = []
+        top = round(row * sheet.get_height() / rows)
+        bottom = round((row + 1) * sheet.get_height() / rows)
+        for column in range(columns):
+            left = round(column * sheet.get_width() / columns)
+            right = round((column + 1) * sheet.get_width() / columns)
+            frame = sheet.subsurface((left, top, right - left, bottom - top)).copy()
+            frame = pygame.transform.smoothscale(frame, TILE_SIZE)
+            row_frames.append(frame)
+        frames.append(row_frames)
+    return frames
+
+def load_duck_images():
+    rows = _load_grid('generated/duck_animation_sheet.png', 4, 4)
     return {
-        'front': duck_front,
-        'back': duck_back,
-        'right': duck_right,
-        'left': duck_left
+        'front': rows[0],
+        'back': rows[1],
+        'right': rows[2],
+        'left': [pygame.transform.flip(frame, True, False) for frame in rows[2]],
+        'torch': rows[3],
     }
 
 def load_enemy_images():
-    enemy_fire = image_load_function('enemy_fire.png')
-    enemy_water = image_load_function('enemy_water.png')
+    enemy_fire = _load_grid('generated/enemy_fire_sheet.png', 4, 1)[0]
+    enemy_water = _load_grid('generated/enemy_water_sheet.png', 4, 1)[0]
 
     rock_dir = os.path.join(ASSET_FOLDER, 'rock_enemy')
     #scale the images so they can be defined with ENEMY_SIZE
@@ -129,4 +145,16 @@ def load_collapsing_floor_images():
         'wobble': image_load_function('collapsing_floor_wobble.png'),
         'cracked': image_load_function('collapsing_floor_cracked.png'),
         'collapsed': image_load_function('collapsing_floor_collapsed.png'),
+    }
+
+
+def load_mechanic_images():
+    rows = _load_grid('generated/gates_hidden_door_sheet.png', 3, 2)
+    return {
+        'one_way_up': rows[0][0],
+        'one_way_right': rows[0][1],
+        'one_way_down': rows[0][2],
+        'one_way_left': rows[1][0],
+        'hidden_door_closed': rows[1][1],
+        'hidden_door_open': rows[1][2],
     }
