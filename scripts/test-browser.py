@@ -77,6 +77,14 @@ with sync_playwright() as p:
    page.keyboard.down('ArrowRight');page.wait_for_timeout(250);page.keyboard.up('ArrowRight')
    after=next(x for x in probe() if x['function']=='main_async' and 'direction' in x)
    assert after['direction']!=state['direction']
+   f.locator('#canvas').click()
+   before_mouse=next(x for x in probe() if x['function']=='main_async' and 'direction' in x)
+   # Headless pointer-lock warping creates cancelling native movements.
+   # Send a deterministic DOM relative-motion event through the SDL listener.
+   f.locator('#canvas').dispatch_event('mousemove',{'movementX':120,'movementY':0,'bubbles':True});page.wait_for_timeout(300)
+   mouse_state=next(x for x in probe() if x['function']=='main_async' and 'direction' in x)
+   assert mouse_state['direction']!=before_mouse['direction'],(label,'mouse turning did not work')
+   print(label,'DOM mouse motion turning verified',flush=True)
    page.screenshot(path=str(out/(label+'-raycast.png')),full_page=True)
    print(label,'raycast',after,flush=True)
    key('escape');assert menu().get('title')=='Choose a mode'
