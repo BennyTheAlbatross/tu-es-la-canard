@@ -1,0 +1,4 @@
+html,body{background:#050404!important;overflow:hidden}
+canvas.emscripten{image-rendering:pixelated}
+#infobox{background:#493b23;color:#f2d996;font:12px monospace;border:2px ridge #b19764;max-width:100%;box-sizing:border-box}
+#pyconsole,#system,#box,#dlg{display:none!important}

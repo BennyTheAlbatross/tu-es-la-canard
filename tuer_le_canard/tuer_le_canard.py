@@ -1,3 +1,4 @@
+import asyncio
 import math
 import argparse
 from pathlib import Path
@@ -10,11 +11,13 @@ except ImportError:
     from game_data import load_level
 
 try:
+    from rules import browser
     from rules.gates import gate_allows
     from rules import music as game_music
 except ImportError:
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from rules import browser
     from rules.gates import gate_allows
     from rules import music as game_music
 
@@ -403,7 +406,7 @@ def draw_hud(screen, level, font, fps, render_size, torch_active):
     screen.blit(font.render(message, True, (245, 225, 185)), (12, 10))
 
 
-def main(map_path=None):
+async def main_async(map_path=None):
     pygame.init()
     game_music.play()
     screen = pygame.display.set_mode(SCREEN_SIZE)
@@ -431,8 +434,8 @@ def main(map_path=None):
     torch_active = False
 
     while status is None:
-        delta_seconds = min(clock.tick(60) / 1000.0, 0.05)
-        for event in pygame.event.get():
+        delta_seconds = min(clock.tick(0 if browser.IS_WEB else 60) / 1000.0, 0.05)
+        for event in browser.events():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 status = "quit"
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
@@ -454,7 +457,10 @@ def main(map_path=None):
                 wall_cache.clear()
                 sprite_cache.clear()
 
-        keys = pygame.key.get_pressed()
+        if status is not None:
+            break
+
+        keys = browser.keys()
         mouse_delta_x, _mouse_delta_y = pygame.mouse.get_rel()
         direction += mouse_delta_x * MOUSE_SENSITIVITY
         direction += (float(keys[pygame.K_RIGHT]) - float(keys[pygame.K_LEFT])) * TURN_SPEED * delta_seconds
@@ -485,12 +491,18 @@ def main(map_path=None):
             screen.blit(glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
         draw_hud(screen, level, font, clock.get_fps(), render_surface.get_size(), torch_active)
         pygame.display.flip()
+        await asyncio.sleep(0)
 
     pygame.event.set_grab(False)
     pygame.mouse.set_visible(True)
-    pygame.quit()
+    if not browser.IS_WEB:
+        pygame.quit()
     print(status.upper())
     return status
+
+
+def main(map_path=None):
+    return asyncio.run(main_async(map_path))
 
 
 if __name__ == "__main__":

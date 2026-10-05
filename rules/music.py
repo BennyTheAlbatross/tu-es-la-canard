@@ -7,7 +7,9 @@ import pygame
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 MUSIC_DIR = PROJECT_DIR / "assets" / "music"
-DEFAULT_TRACK = MUSIC_DIR / "hellfeather_march.wav"
+DEFAULT_TRACK = MUSIC_DIR / "hellfeather_march.ogg"
+if not DEFAULT_TRACK.exists():
+    DEFAULT_TRACK = MUSIC_DIR / "hellfeather_march.wav"
 DEFAULT_VOLUME = 0.32
 
 _enabled = True

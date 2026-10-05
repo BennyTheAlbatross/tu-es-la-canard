@@ -1,3 +1,4 @@
+import asyncio
 # setup python
 import pygame, sys, os, csv
 
@@ -16,6 +17,7 @@ except ImportError:
     from gameplay import screen_width, screen_height
 from rules.sprits import TILE_SIZE, ASSET_FOLDER, load_torch_images
 from rules import music as game_music
+from rules import browser
 import subprocess
 
 MAPS_DIR = os.path.join(PROJECT_DIR, 'maps', 'game')
@@ -29,6 +31,12 @@ game_music.play()
 font = pygame.font.Font(None, 36)
 title_font = pygame.font.Font(None, 64)
 torch_frames = load_torch_images()['torch']
+_backgrounds = {}
+
+def background(name):
+    if name not in _backgrounds:
+        _backgrounds[name] = pygame.transform.scale(pygame.image.load(os.path.join(ASSET_FOLDER, name)), (screen_width, screen_height))
+    return _backgrounds[name]
 
 
 def draw_text(text, font, color, surface, x, y, center=False):
@@ -64,10 +72,7 @@ def list_maps():
 def draw_menu(title, options, selected, subtitle="", footer="Arrows/WASD: move    Enter: select    M: music    Esc: back"):
     screen.fill((0, 0, 0))
     screen.blit(
-        pygame.transform.scale(
-            pygame.image.load(os.path.join(ASSET_FOLDER, 'menu_background.png')),
-            (screen_width, screen_height),
-        ),
+        background('menu_background.png'),
         (0, 0),
     )
 
@@ -100,14 +105,16 @@ def draw_menu(title, options, selected, subtitle="", footer="Arrows/WASD: move  
     pygame.display.update()
 
 
-def choose_menu(title, options, subtitle="", escape_result=None):
+async def choose_menu(title, options, subtitle="", escape_result=None):
     # Retry here as well as at module startup: some desktop audio services are
     # not ready during the first few milliseconds of application launch.
     game_music.play()
     selected = 0
+    clock = pygame.time.Clock()
     while True:
+        await browser.next_frame(clock, 30)
         draw_menu(title, options, selected, subtitle)
-        for event in pygame.event.get():
+        for event in browser.events():
             if event.type == pygame.QUIT:
                 return "quit"
             if event.type != pygame.KEYDOWN:
@@ -125,18 +132,17 @@ def choose_menu(title, options, subtitle="", escape_result=None):
                 return selected
 
 
-def death_screen(last_map):
+async def death_screen(last_map):
     # Keyboard-centric death screen with Play Again / Main Menu.
     options = ["Play Again", "Main Menu"]
     selected = 0
+    clock = pygame.time.Clock()
 
     while True:
+        await browser.next_frame(clock, 30)
         screen.fill((0, 0, 0))
         screen.blit(
-            pygame.transform.scale(
-                pygame.image.load(os.path.join(ASSET_FOLDER, 'death_screen.png')),
-                (screen_width, screen_height),
-            ),
+            background('death_screen.png'),
             (0, 0),
         )
 
@@ -160,12 +166,16 @@ def death_screen(last_map):
 
         pygame.display.update()
 
-        for event in pygame.event.get():
+        for event in browser.events():
             if event.type == pygame.QUIT:
+                if browser.IS_WEB:
+                    return "menu"
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    if browser.IS_WEB:
+                        return "menu"
                     pygame.quit()
                     sys.exit()
                 elif event.key == pygame.K_m:
@@ -181,18 +191,17 @@ def death_screen(last_map):
                         return 'menu'
 
 
-def win_screen(last_map):
+async def win_screen(last_map):
     # Keyboard-centric level-cleared screen with Play Again / Main Menu.
     options = ["Play Again", "Main Menu"]
     selected = 0
+    clock = pygame.time.Clock()
 
     while True:
+        await browser.next_frame(clock, 30)
         screen.fill((0, 0, 0))
         screen.blit(
-            pygame.transform.scale(
-                pygame.image.load(os.path.join(ASSET_FOLDER, 'screen_cleared.png')),
-                (screen_width, screen_height),
-            ),
+            background('screen_cleared.png'),
             (0, 0),
         )
 
@@ -215,12 +224,16 @@ def win_screen(last_map):
 
         pygame.display.update()
 
-        for event in pygame.event.get():
+        for event in browser.events():
             if event.type == pygame.QUIT:
+                if browser.IS_WEB:
+                    return "menu"
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    if browser.IS_WEB:
+                        return "menu"
                     pygame.quit()
                     sys.exit()
                 elif event.key == pygame.K_m:
@@ -236,21 +249,21 @@ def win_screen(last_map):
                         return 'menu'
 
 
-def launch_level(map_path):
+async def launch_level(map_path):
     # Run the game and react to how it ended. Loop (never recurse) so repeated
     # plays don't stack menus/frames on the call stack.
     global screen
     while True:
-        status = gameplay.main(map_path)
+        status = await gameplay.main_async(map_path)
         # Restore the menu window/caption after gameplay took over the display.
         screen = pygame.display.set_mode((screen_width, screen_height))
         pygame.display.set_caption("tu es le canard")
         if status == 'dead':
-            if death_screen(map_path) == 'play_again':
+            if await death_screen(map_path) == 'play_again':
                 continue
             return
         if status == 'won':
-            if win_screen(map_path) == 'play_again':
+            if await win_screen(map_path) == 'play_again':
                 continue
             return
         # 'quit' falls through back to the menu.
@@ -265,7 +278,12 @@ def restore_menu_display():
     pygame.display.set_caption("tu es le canard")
 
 
-def launch_raycaster(map_path):
+async def launch_raycaster(map_path):
+    if browser.IS_WEB:
+        from tuer_le_canard import tuer_le_canard
+        status = await tuer_le_canard.main_async(map_path)
+        restore_menu_display()
+        return "quit" if status == "close" else None
     script = os.path.join(PROJECT_DIR, "tuer_le_canard", "tuer_le_canard.py")
     if pygame.mixer.get_init():
         pygame.mixer.music.pause()
@@ -275,11 +293,11 @@ def launch_raycaster(map_path):
     while process.poll() is None:
         # The ray-cast game owns the foreground window, but this parent window
         # must continue servicing its OS event queue or it is marked hung.
-        for event in pygame.event.get():
+        for event in browser.events():
             if event.type == pygame.QUIT:
                 close_requested = True
         pygame.event.pump()
-        wait_clock.tick(30)
+        await browser.next_frame(wait_clock, 30)
     restore_menu_display()
     game_music.play()
     return "quit" if close_requested else None
@@ -290,11 +308,11 @@ def launch_map_editor():
     subprocess.Popen([sys.executable, editor])
 
 
-def choose_level(maps):
+async def choose_level(maps):
     if not maps:
-        choose_menu("No levels found", ["Back"], "Add CSV files to maps/game", escape_result=None)
+        await choose_menu("No levels found", ["Back"], "Add CSV files to maps/game", escape_result=None)
         return None
-    result = choose_menu(
+    result = await choose_menu(
         "Choose a level",
         [name for name, _path in maps] + ["Back"],
         "The same map can be played in either view",
@@ -305,51 +323,53 @@ def choose_level(maps):
     return maps[result]
 
 
-def choose_mode(level_name, map_path):
+async def choose_mode(level_name, map_path):
     while True:
-        result = choose_menu(
+        result = await choose_menu(
             "Choose a mode",
-            ["2D dungeon", "Ray-cast dungeon", "Back"],
+            (["2D dungeon", "Back"] if browser.is_touch_device() else ["2D dungeon", "Ray-cast dungeon", "Back"]),
             f"Level: {level_name}",
             escape_result=None,
         )
-        if result in (None, "quit", 2):
+        if result in (None, "quit") or result == (1 if browser.is_touch_device() else 2):
             return result
         if result == 0:
-            launch_level(map_path)
+            await launch_level(map_path)
             restore_menu_display()
         elif result == 1:
-            if launch_raycaster(map_path) == "quit":
+            if await launch_raycaster(map_path) == "quit":
                 return "quit"
 
 
-def main_menu():
+async def main_menu():
     restore_menu_display()
     game_music.play()
     maps = list_maps()
     while True:
-        result = choose_menu(
+        result = await choose_menu(
             "tu es le canard",
-            ["Play", "Map editor", "Quit"],
+            (["Play"] if browser.IS_WEB else ["Play", "Map editor", "Quit"]),
             "A duck, a dungeon, and several bad decisions",
-            escape_result="quit",
+            escape_result=None if browser.IS_WEB else "quit",
         )
-        if result in (2, "quit"):
+        if result == 2 or result == "quit":
             pygame.quit()
             return
-        if result == 1:
+        if result is None:
+            continue
+        if not browser.IS_WEB and result == 1:
             launch_map_editor()
             continue
-        chosen = choose_level(maps)
+        chosen = await choose_level(maps)
         if chosen == "quit":
             pygame.quit()
             return
         if chosen:
-            mode_result = choose_mode(*chosen)
+            mode_result = await choose_mode(*chosen)
             if mode_result == "quit":
                 pygame.quit()
                 return
 
 
 if __name__ == "__main__":
-    main_menu()
+    asyncio.run(main_menu())

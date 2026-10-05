@@ -1,3 +1,4 @@
+import asyncio
 import pygame 
 import csv 
 import os
@@ -24,6 +25,7 @@ import rules.movments as movments
 from rules import interactions
 from rules import shaders
 from rules import music as game_music
+from rules import browser
 
 
 #constants 
@@ -349,7 +351,7 @@ def draw_world(
         )
 
 
-def main(map_file=DEFAULT_MAP):
+async def main_async(map_file=DEFAULT_MAP):
     pygame.init()
     game_music.play()
 
@@ -412,10 +414,10 @@ def main(map_file=DEFAULT_MAP):
     level_time = 0.0
 
     while True:
-        delta_seconds = min(clock.tick(FPS) / 1000.0, 0.05)
+        delta_seconds = min(clock.tick(0 if browser.IS_WEB else FPS) / 1000.0, 0.05)
         level_time += delta_seconds
         # Handle events
-        for event in pygame.event.get():
+        for event in browser.events():
             if event.type == pygame.QUIT:
                 return 'quit'
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -426,7 +428,7 @@ def main(map_file=DEFAULT_MAP):
                 game_music.toggle()
 
         # Handle user input
-        keys = pygame.key.get_pressed()
+        keys = browser.keys()
         door_is_open = len(gems) == 0
         closed_hidden_doors = [
             (door['x'], door['y'], 'hidden_door')
@@ -518,8 +520,13 @@ def main(map_file=DEFAULT_MAP):
 
         # Update the display
         pygame.display.flip()
+        await asyncio.sleep(0)
 
 
+
+
+def main(map_file=DEFAULT_MAP):
+    return asyncio.run(main_async(map_file))
 
 
 if __name__ == "__main__":  

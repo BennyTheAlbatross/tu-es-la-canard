@@ -1,0 +1,54 @@
+[
+  {
+    "path": "0.9.3/pythons.js",
+    "sha256": "6da43e3e62c3db933421b99681e8ef99ed9b0ce1589ed8a0c69b88443278e019"
+  },
+  {
+    "path": "0.9.3/empty.html",
+    "sha256": "b0693dc92f76e08bf1485b3dd9b514a2e31dfd6f39422a6b60edb722671dc98f"
+  },
+  {
+    "path": "vtx.js",
+    "sha256": "9c5f4de60a85dad9093862715094d67d9c8065872657ad3effa1a6cac6834797"
+  },
+  {
+    "path": "vt/xterm.css",
+    "sha256": "832f3f2c603b43ad4351ff04970150cc7a873014276db126a6065c6dd81e4872"
+  },
+  {
+    "path": "vt/xterm.js",
+    "sha256": "f0aea0f75f48559013ae6643c2479dd737d26da42d5524e6d2b70915ae6523c7"
+  },
+  {
+    "path": "vt/xterm-addon-image.js",
+    "sha256": "a4795cf0998c595de120f79a69c6e522db5fff28dba7c50c1e872ea81a89fd81"
+  },
+  {
+    "path": "0.9.3/cpython312/main.js",
+    "sha256": "01c4e4dc7145a482ad259d8272ce73d97b58ec2a141bfb57e620347730d159c7"
+  },
+  {
+    "path": "0.9.3/cpython312/main.data",
+    "sha256": "b068df4d59b06b113cfc3c4d6419bdf699d2c2eeb547c9119e2044c98cdc4a59"
+  },
+  {
+    "path": "0.9.3/cpython312/main.wasm",
+    "sha256": "3cfb882de90feeb367325f0c58731932880c8f424fb5a670b98d035ae862b280"
+  },
+  {
+    "path": "0.9.3/empty.ogg",
+    "sha256": "884c20d864222b845aa78fb078ec370f4ddaa203cd92ace28440ed7733403b40"
+  },
+  {
+    "path": "0.9.3/cpythonrc.py",
+    "sha256": "b8a0b8168b58ef7c38c17d4705c9cbe1751fa667a0a6d26ed26f0537134735de"
+  },
+  {
+    "path": "index-0.9.3-cp312.json",
+    "sha256": "ec6edacc1b95700c99b8daecb8ce3949e58e96a1da5234c81d8a0071aa537213"
+  },
+  {
+    "path": "cp312/pygame_ce-2.5.7-cp312-cp312-wasm32_bi_emscripten.whl",
+    "sha256": "4f2caa3020592950565f3649c41e2eeacd001be93da892d60e5a4a43d893a323"
+  }
+]
