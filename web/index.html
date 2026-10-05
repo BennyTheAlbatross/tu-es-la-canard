@@ -3,56 +3,48 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Tu es la Canard :: a duck in hell</title>
+  <title>Benny’s website</title>
   <link rel="stylesheet" href="style.css">
   <script src="controls.js" defer></script>
 </head>
 <body>
   <main class="page">
-    <div class="top-strip">WELCOME TO MY DUCK'S LITTLE CORNER OF THE WORLD WIDE WEB</div>
     <header>
-      <p class="eyebrow">~ enter freely, quack loudly ~</p>
-      <div class="title-row"><img src="images/duck.png" alt="" class="duck"><h1>TU ES LA<br><span>CANARD</span></h1><img src="images/duck.png" alt="" class="duck duck-right"></div>
-      <p class="tagline">one duck. several demons. absolutely no good decisions.</p>
-      <div class="divider">✦ &nbsp; QUACK &nbsp; ✦ &nbsp; QUACK &nbsp; ✦</div>
+      <h1 aria-label="Benny’s website"><span aria-hidden="true"><span class="word"><span class="letter">B</span><span class="letter">e</span><span class="letter">n</span><span class="letter">n</span><span class="letter">y</span><span class="letter">’</span><span class="letter">s</span></span> <span class="word"><span class="letter">w</span><span class="letter">e</span><span class="letter">b</span><span class="letter">s</span><span class="letter">i</span><span class="letter">t</span><span class="letter">e</span></span></span></h1>
     </header>
-    <div id="play-area" class="play-area">
-    <section class="game-box" aria-label="Play Tu es la Canard">
-      <div class="window-bar"><span>canard.exe — dungeon adventures</span><span>▰ &nbsp; □ &nbsp; ×</span></div>
-      <iframe id="game" title="Tu es la Canard game" src="game/index.html" allow="autoplay; fullscreen" allowfullscreen></iframe>
-      <div class="focus-note">★ CLICK THE GAME TO BEGIN ★ <button id="fullscreen" type="button">FULL SCREEN</button></div>
-    </section>
-    <nav class="touch-controls" aria-label="Touch game controls">
-      <div class="dpad">
-        <button data-key="up" aria-label="Move up">▲</button>
-        <button data-key="left" aria-label="Move left">◀</button>
-        <span class="dpad-duck">◆</span>
-        <button data-key="right" aria-label="Move right">▶</button>
-        <button data-key="down" aria-label="Move down">▼</button>
-      </div>
-      <div class="actions">
-        <button data-key="enter">SELECT</button><button data-key="torch">TORCH</button>
-        <button data-key="escape">BACK</button><button data-key="music">MUSIC</button>
-      </div>
+    <nav class="tabs" role="tablist" aria-label="Website tabs">
+      <button id="game-tab" type="button" role="tab" aria-selected="true" aria-controls="game-panel">Game</button>
     </nav>
-    </div>
-    <section class="manual">
-      <h2>READ ME BEFORE YOU DESCEND</h2>
-      <div class="instructions">
-        <p><strong>2D DUNGEON</strong><br>Arrow keys to move.<br>Collect gems. Find the exit. Stay alive.</p>
-        <p><strong>RAY-CAST DUNGEON</strong><br>WASD to walk; mouse / ← → to turn.<br>Desktop only. − / + adjusts detail.</p>
-        <p><strong>THE IMPORTANT BITS</strong><br>Space: raise / lower torch. M: music.<br>Enter: select. Esc: back.</p>
+    <section id="game-panel" role="tabpanel" aria-labelledby="game-tab">
+      <h2>Tu es la Canard</h2>
+      <div id="play-area" class="play-area">
+        <div class="game-box">
+          <iframe id="game" title="Tu es la Canard game" src="game/index.html" allow="autoplay; fullscreen" allowfullscreen></iframe>
+          <p class="game-note">Click the game to start. On a phone, try turning sideways.</p>
+        </div>
+        <aside class="game-controls" aria-label="Game controls">
+          <div class="touch-controls" aria-label="Movement">
+            <div class="dpad">
+              <button data-key="up" type="button" aria-label="Move up">↑</button>
+              <button data-key="left" type="button" aria-label="Move left">←</button>
+              <button data-key="right" type="button" aria-label="Move right">→</button>
+              <button data-key="down" type="button" aria-label="Move down">↓</button>
+            </div>
+            <div class="actions">
+              <button data-key="enter" type="button">Select</button>
+              <button data-key="torch" type="button">Torch</button>
+              <button data-key="escape" type="button">Back</button>
+              <button data-key="music" type="button">Music</button>
+            </div>
+          </div>
+          <button id="fullscreen" type="button">Full screen</button>
+          <p class="keyboard-help">Arrows: move<br>Space: torch<br>M: music<br>Enter: select<br>Esc: back</p>
+          <p class="keyboard-help">3D: WASD + mouse<br>− / +: detail</p>
+        </aside>
       </div>
-      <p class="warning">A raised torch reveals secrets, slows the duck, and makes the demons faster. You have been warned.</p>
-      <p class="mobile-note">On a phone? Turn sideways and use the buttons. The 2D dungeon is touch-ready.</p>
+      <p class="game-hint">Collect gems and find the exit. Raising your torch reveals secrets, but makes the demons faster.</p>
     </section>
-    <footer>
-      <div class="badges"><span>BEST VIEWED AT<br><b>1024 × 768</b></span><span>POWERED BY<br><b>DUCK ENERGY</b></span><span>HOSTED BY<br><b>POTATO KING</b></span><span>100% STATIC<br><b>0% SENSIBLE</b></span></div>
-      <p class="construction">⚠ THIS CORNER OF HELL IS UNDER CONSTRUCTION ⚠</p>
-      <p class="counter">YOU ARE VISITOR No. <span>0 0 0 Q U A C K</span> <small>(decorative, obviously)</small></p>
-      <p class="fine-print">The game runs in your browser. No accounts. No scores sent home. Just ducks.</p>
-      <a href="https://github.com/BennyTheAlbatross/tu-es-la-canard">ORIGINAL GAME SOURCE</a>
-    </footer>
+    <footer>Made by Benny · hosted on Potato King</footer>
   </main>
 </body>
 </html>

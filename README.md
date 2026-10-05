@@ -85,6 +85,24 @@ fails. The serving VM does not need GitHub credentials, a Python build
 environment, or a checkout. Full provisioning, isolation checks, recovery and
 emergency commands are in [deploy/OPERATIONS.md](deploy/OPERATIONS.md).
 
+## Personal website wrapper
+
+The wrapper is a plain personal website with a rainbow “Benny’s website”
+heading and a Game tab. Its controls stay beside the game on desktop and
+phones, including full screen. Phone landscape gives the game more room.
+The Comic Neue heading font and its OFL license are served locally.
+
+To check the actual public Funnel path while bypassing local MagicDNS:
+
+```sh
+CANARD_URL=https://your-public-host.ts.net CANARD_PUBLIC_IP=PUBLIC_RELAY_IP \
+  .venv/bin/python scripts/test-browser.py
+```
+
+This verifies Chromium desktop and emulated mobile connect to that public
+relay IP with normal certificate verification. It does not verify public DNS
+or replace a play check from another Internet connection.
+
 ## Architecture
 
 Internet → Tailscale Funnel HTTPS → isolated Debian `canard-web` VM →

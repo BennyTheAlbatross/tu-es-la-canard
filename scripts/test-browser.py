@@ -1,4 +1,5 @@
-import json,time,os
+import json,time,os,ipaddress
+from urllib.parse import urlparse
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 out=Path(os.environ.get('CANARD_EVIDENCE','build/browser-evidence'));out.mkdir(parents=True,exist_ok=True)
@@ -24,16 +25,26 @@ for _task in asyncio.all_tasks():
 platform.window.canardProbe=json.dumps(_canard_frames)
 '''
 with sync_playwright() as p:
- for browser_name,mobile in [('chromium',False),('firefox',False),('chromium',True)]:
+ public_ip=os.environ.get('CANARD_PUBLIC_IP')
+ if public_ip:ipaddress.ip_address(public_ip)
+ cases=[('chromium',False),('firefox',False),('chromium',True)] if not public_ip else [('chromium',False),('chromium',True)]
+ for browser_name,mobile in cases:
   label=browser_name+('-mobile' if mobile else '')
-  b=getattr(p,browser_name).launch(headless=True)
+  args=[]
+  if public_ip:
+   public_host=urlparse(os.environ['CANARD_URL']).hostname
+   args=['--host-resolver-rules=MAP '+public_host+' '+public_ip]
+  b=getattr(p,browser_name).launch(headless=True,args=args)
   context=b.new_context(viewport={'width':844 if mobile else 1280,'height':390 if mobile else 900},is_mobile=mobile if browser_name=='chromium' else False,has_touch=mobile)
   page=context.new_page();events=[];network=[]
   page.on('console',lambda m:events.append({'type':m.type,'text':m.text}))
   page.on('request',lambda r:network.append(r.url))
   page.on('pageerror',lambda e:events.append({'type':'pageerror','text':str(e)}))
   page.on('requestfailed',lambda r:events.append({'type':'requestfailed','text':r.url+' '+str(r.failure)}))
-  started=time.monotonic();page.goto(os.environ.get('CANARD_URL','http://127.0.0.1:18000'),wait_until='domcontentloaded')
+  started=time.monotonic();response=page.goto(os.environ.get('CANARD_URL','http://127.0.0.1:18000'),wait_until='domcontentloaded')
+  endpoint=response.server_addr()
+  if public_ip:assert endpoint['ipAddress']==public_ip,endpoint
+  print(label,'HTTPS endpoint',endpoint,flush=True)
   f=page.locator('#game').element_handle().content_frame();f.wait_for_url('**/game/index.html')
   f.wait_for_function('document.querySelector("#canvas").width > 1 || document.querySelector("#infobox").innerText.includes("Ready to start")',timeout=90000)
   if f.locator('#canvas').evaluate('(c)=>c.width') == 1:f.locator('#canvas').click(force=True)
@@ -101,6 +112,6 @@ platform.window.canardLevels=json.dumps([str(path) for path in levels])
   print(label,'browser-loaded levels',loaded_levels,flush=True)
   audio=f.evaluate('Object.keys(MM).filter(k=>/^\\d+$/.test(k)).map(k=>({id:k,time:MM[k].media?.currentTime,paused:MM[k].media?.paused,error:MM[k].media?.error?.code}))')
   print(label,'audio',audio,flush=True)
-  (out/(label+'-verification.json')).write_text(json.dumps({'loaded_levels':loaded_levels,'load_seconds':load_seconds,'transfers':transfers,'audio':audio,'events':events,'network':network},indent=2))
+  (out/(label+'-verification.json')).write_text(json.dumps({'endpoint':endpoint,'loaded_levels':loaded_levels,'load_seconds':load_seconds,'transfers':transfers,'audio':audio,'events':events,'network':network},indent=2))
   print(label,'errors',[e for e in events if e['type'] in ('error','pageerror','requestfailed')],flush=True)
   b.close()
