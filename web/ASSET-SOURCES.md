@@ -22,3 +22,12 @@ in the development workspace's design-review directory.
 When editing the header, reference this file relative to `web/index.html`:
 `images/header/paperclip-inspired.gif`. Preserve its animation. A still
 alternative for reduced-motion visitors has not yet been approved.
+
+## Supplied music
+
+- File: `music/groovy-town.mp3`.
+- Source: Benny supplied `groovy town.wav` and approved an MP3 web copy.
+- Approved displayed title: `groovy town`.
+- Classification: user-supplied music, not asserted public domain or freely licensed. No reuse licence or public credit text has been supplied.
+- Conversion details: see `music/README.md`.
+- Status: prepared locally, not deployed.
