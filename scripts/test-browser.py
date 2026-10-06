@@ -45,6 +45,7 @@ with sync_playwright() as p:
   endpoint=response.server_addr()
   if public_ip:assert endpoint['ipAddress']==public_ip,endpoint
   print(label,'HTTPS endpoint',endpoint,flush=True)
+  page.locator('#game-tab').click()
   f=page.locator('#game').element_handle().content_frame();f.wait_for_url('**/game/index.html')
   f.wait_for_function('document.querySelector("#canvas").width > 1 || document.querySelector("#infobox").innerText.includes("Ready to start")',timeout=90000)
   if f.locator('#canvas').evaluate('(c)=>c.width') == 1:f.locator('#canvas').click(force=True)

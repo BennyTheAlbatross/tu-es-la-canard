@@ -1,3 +1,7 @@
+/* EXISTING GAME CONTROLS
+   These buttons send the same input messages as before. The game iframe
+   element remains in place when changing rooms. Clear held keys on exit
+   so returning to the game cannot leave a movement button stuck. */
 (() => {
   const game = document.getElementById('game');
   const held = new Set();
@@ -16,6 +20,7 @@
     button.addEventListener('pointercancel', up);
     button.addEventListener('lostpointercapture', up);
   });
+  window.addEventListener('canard-room-change', release);
   window.addEventListener('blur', release);
   document.addEventListener('visibilitychange', () => {if(document.hidden) release();});
   document.getElementById('fullscreen').addEventListener('click', () => {

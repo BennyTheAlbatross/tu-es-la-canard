@@ -2,25 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Benny’s website</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>H-boonar's Web Corner</title>
+  <!-- Website appearance lives here; game styling remains in game.css. -->
   <link rel="stylesheet" href="style.css">
+  <!-- Navigation is separate from the existing game-control bridge. -->
   <script src="controls.js" defer></script>
+  <script src="site.js" defer></script>
 </head>
 <body>
-  <main class="page">
-    <header>
-      <h1 aria-label="Benny’s website"><span aria-hidden="true"><span class="word"><span class="letter">B</span><span class="letter">e</span><span class="letter">n</span><span class="letter">n</span><span class="letter">y</span><span class="letter">’</span><span class="letter">s</span></span> <span class="word"><span class="letter">w</span><span class="letter">e</span><span class="letter">b</span><span class="letter">s</span><span class="letter">i</span><span class="letter">t</span><span class="letter">e</span></span></span></h1>
-    </header>
-    <nav class="tabs" role="tablist" aria-label="Website tabs">
-      <button id="game-tab" type="button" role="tab" aria-selected="true" aria-controls="game-panel">Game</button>
+  <!-- ==============================================================
+       PERMANENT HEADER
+       The title uses the previously approved rainbow font treatment.
+       The locally stored GIF is Benny's approved paperclip mascot.
+       No speech or invented site copy is attached to the character.
+       ============================================================== -->
+  <header id="site-header">
+    <div class="title-area">
+      <h1 aria-label="h-boonar"><span aria-hidden="true"><span class="letter">h</span><span class="letter">-</span><span class="letter">b</span><span class="letter">o</span><span class="letter">o</span><span class="letter">n</span><span class="letter">a</span><span class="letter">r</span></span></h1>
+      <img class="paperclip" src="images/header/paperclip-inspired.gif"
+           width="160" height="160" alt="Animated paperclip">
+    </div>
+    <!-- Keep these four tabs in this order; do not add tabs automatically. -->
+    <nav aria-label="Website pages">
+      <div class="tabs" role="tablist">
+        <button id="home-tab" role="tab" aria-selected="true" aria-controls="home" type="button">HOME PAGE</button>
+        <button id="game-tab" role="tab" aria-selected="false" aria-controls="game-panel" type="button" tabindex="-1">TU ES LA CANARD</button>
+        <button id="music-tab" role="tab" aria-selected="false" aria-controls="music" type="button" tabindex="-1">MUSIC</button>
+        <button id="board-tab" role="tab" aria-selected="false" aria-controls="message-board" type="button" tabindex="-1">MESSAGE BOARD</button>
+      </div>
     </nav>
-    <section id="game-panel" role="tabpanel" aria-labelledby="game-tab">
+  </header>
+
+  <main id="rooms">
+    <!-- HOME: replace the bracketed text only with Benny's supplied copy. -->
+    <section id="home" class="room" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
+      <div class="home-text">[HOME PAGE WELCOME TEXT NEEDED FROM BENNY]</div>
+      <!-- VISITOR COUNTER: visual placeholder only. No counting endpoint,
+           analytics, cookies, fake total or third-party request exists. -->
+      <div class="visitor-counter">
+        <div>YOU ARE VISITOR</div>
+        <output aria-label="Visitor count placeholder">[COUNTER]</output>
+      </div>
+    </section>
+
+    <!-- CANARD: original iframe and side-control markup retained.
+         site.js loads the game on entry and unloads it on exit.
+         Returning starts a new game, as Benny requested. -->
+    <section id="game-panel" class="room" role="tabpanel" aria-labelledby="game-tab" tabindex="0" hidden>
+      <div class="canard-content">
       <h2>Tu es la Canard</h2>
       <div id="play-area" class="play-area">
         <div class="game-box">
-          <iframe id="game" title="Tu es la Canard game" src="game/index.html" allow="autoplay; fullscreen" allowfullscreen></iframe>
-          <p class="game-note">Click the game to start. On a phone, try turning sideways.</p>
+          <iframe id="game" title="Tu es la Canard game" src="about:blank" data-game-src="game/index.html" allow="autoplay; fullscreen" allowfullscreen></iframe>
         </div>
         <aside class="game-controls" aria-label="Game controls">
           <div class="touch-controls" aria-label="Movement">
@@ -42,9 +76,29 @@
           <p class="keyboard-help">3D: WASD + mouse<br>− / +: detail</p>
         </aside>
       </div>
-      <p class="game-hint">Collect gems and find the exit. Raising your torch reveals secrets, but makes the demons faster.</p>
+      <p class="canard-text">[CANARD TEXT NEEDED FROM BENNY]</p>
+      </div>
     </section>
-    <footer>Made by Benny · hosted on Potato King</footer>
+
+    <!-- MUSIC: Benny approved the exact lowercase title "groovy town".
+         Add artwork, credits or other text only when Benny supplies them. -->
+    <section id="music" class="room" role="tabpanel" aria-labelledby="music-tab" tabindex="0" hidden>
+      <div class="music-content">
+        <h2>groovy town</h2>
+        <!-- HTML5 PLAYER: local MP3; fetch on play, never autoplay.
+             Replace the source path below to change the song. -->
+        <audio id="song" controls preload="none" aria-label="groovy town">
+          <source src="music/groovy-town.mp3" type="audio/mpeg">
+        </audio>
+        <p>[MUSIC TEXT NEEDED FROM BENNY]</p>
+        <!-- Artwork/credits/lyrics locations can be added when supplied. -->
+      </div>
+    </section>
+
+    <!-- MESSAGE BOARD: only a placeholder. No form, API or database. -->
+    <section id="message-board" class="room" role="tabpanel" aria-labelledby="board-tab" tabindex="0" hidden>
+      <div class="board-text">[MESSAGE BOARD COMING-SOON TEXT NEEDED FROM BENNY]</div>
+    </section>
   </main>
 </body>
 </html>

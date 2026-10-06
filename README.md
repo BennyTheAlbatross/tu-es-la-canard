@@ -199,3 +199,23 @@ home/
 |
 |---launcher.py             # Main urnnng script
 |---README.MD               # repo instructions/ plan / this doc 
+
+### Personal website wrapper (design review)
+
+The wrapper is `web/index.html`, with commented room styles in
+`web/style.css` and tab navigation in `web/site.js`. The document title is
+`H-boonar's Web Corner`; the visible rainbow header reads `h-boonar`.
+Approved visual and audio provenance is recorded in `web/ASSET-SOURCES.md`.
+
+HOME PAGE, TU ES LA CANARD, MUSIC and MESSAGE BOARD are the four rooms.
+The game iframe loads when entering Canard and is unloaded when leaving;
+returning starts a new game. Game code and the input protocol are unchanged.
+The HTML5 Music player uses the supplied `groovy town` MP3, does not autoplay,
+and does not fetch audio until needed. The visitor counter is `[COUNTER]`,
+not a working total. No tracking or message-board backend is present.
+
+Replace bracketed text only with supplied content. To change a room's
+background, edit its labelled CSS block and keep approved assets local.
+Texture sizes are near the top of `style.css`. The build still uses
+`scripts/build-web.sh`; deployment still uses `scripts/deploy-web.sh`.
+The wrapper remains a local review until revised visuals are approved.

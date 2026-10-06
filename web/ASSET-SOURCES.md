@@ -31,3 +31,14 @@ alternative for reduced-motion visitors has not yet been approved.
 - Classification: user-supplied music, not asserted public domain or freely licensed. No reuse licence or public credit text has been supplied.
 - Conversion details: see `music/README.md`.
 - Status: prepared locally, not deployed.
+
+## Room textures (local review)
+
+Original AI-generated textures derived from Benny’s selected candidate styles on 6 October 2026. No external artwork borrowed; no public-domain or third-party licence asserted. Generated source images retained outside the repository in design-review. Web copies resized to at most 512 pixels per edge to keep downloads small.
+
+- `images/canard/duck-skulls.png`: selected B1 pixel duck skulls.
+- `images/music/emerald-marble.png`: selected C2 emerald marble.
+- `images/message-board/navy-stipple.png`: selected E3 navy stipple.
+- `images/home/blue-bubbles.png`: D2 revised at Benny’s request to larger obvious blue bubbles; final preview awaiting approval. Also used behind the header as requested.
+
+All files are local. These repeat using CSS; generator-proposed seamlessness is not a pixel-exact guarantee. No texture has yet been deployed.
