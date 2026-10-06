@@ -200,11 +200,11 @@ home/
 |---launcher.py             # Main urnnng script
 |---README.MD               # repo instructions/ plan / this doc 
 
-### Personal website wrapper (design review)
+### Personal website wrapper
 
 The wrapper is `web/index.html`, with commented room styles in
 `web/style.css` and tab navigation in `web/site.js`. The document title is
-`H-boonar's Web Corner`; the visible rainbow header reads `h-boonar`.
+`H Boonar's Web Corner`, matching the visible rainbow header.
 Approved visual and audio provenance is recorded in `web/ASSET-SOURCES.md`.
 
 HOME PAGE, TU ES LA CANARD, MUSIC and MESSAGE BOARD are the four rooms.
@@ -218,4 +218,5 @@ Replace bracketed text only with supplied content. To change a room's
 background, edit its labelled CSS block and keep approved assets local.
 Texture sizes are near the top of `style.css`. The build still uses
 `scripts/build-web.sh`; deployment still uses `scripts/deploy-web.sh`.
-The wrapper remains a local review until revised visuals are approved.
+Benny approved the room backgrounds and supplied all current room copy.
+The visitor counter remains the explicitly marked development placeholder.

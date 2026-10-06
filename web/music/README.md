@@ -9,7 +9,6 @@ source stereo channels and sample rate. Source metadata was removed; only
 the approved title was explicitly added. No artist, date, credits, lyrics
 or artwork have been supplied.
 
-When the Music page is approved, its HTML5 player should use
+The Music page’s HTML5 player uses
 `music/groovy-town.mp3`, with `controls` and `preload="none"`. Do not autoplay.
-This file is prepared locally; it has not been published or connected to
-the current website wrapper.
+The MP3 is connected to the Music room; it is included in the static build.

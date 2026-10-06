@@ -50,7 +50,10 @@ button:focus-visible { outline: 3px solid #104bff; outline-offset: 2px; }
 h1 {
   font: 700 clamp(36px, 7vw, 64px)/1.1 "Comic Neue", "Comic Sans MS", cursive;
   margin: 0;
+  min-width: 0;
 }
+/* Keep each title word together, while allowing wrapping on phones. */
+.title-word { display: inline-block; }
 .letter:nth-child(7n+1) { color: #d12b32; }
 .letter:nth-child(7n+2) { color: #d56812; }
 .letter:nth-child(7n+3) { color: #b38b00; }

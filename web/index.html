@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>H-boonar's Web Corner</title>
+  <title>H Boonar's Web Corner</title>
   <!-- Website appearance lives here; game styling remains in game.css. -->
   <link rel="stylesheet" href="style.css">
   <!-- Navigation is separate from the existing game-control bridge. -->
@@ -19,7 +19,7 @@
        ============================================================== -->
   <header id="site-header">
     <div class="title-area">
-      <h1 aria-label="h-boonar"><span aria-hidden="true"><span class="letter">h</span><span class="letter">-</span><span class="letter">b</span><span class="letter">o</span><span class="letter">o</span><span class="letter">n</span><span class="letter">a</span><span class="letter">r</span></span></h1>
+      <h1 aria-label="H Boonar&#x27;s Web Corner"><span aria-hidden="true"><span class="title-word"><span class="letter">H</span></span> <span class="title-word"><span class="letter">B</span><span class="letter">o</span><span class="letter">o</span><span class="letter">n</span><span class="letter">a</span><span class="letter">r</span><span class="letter">&#x27;</span><span class="letter">s</span></span> <span class="title-word"><span class="letter">W</span><span class="letter">e</span><span class="letter">b</span></span> <span class="title-word"><span class="letter">C</span><span class="letter">o</span><span class="letter">r</span><span class="letter">n</span><span class="letter">e</span><span class="letter">r</span></span></span></h1>
       <img class="paperclip" src="images/header/paperclip-inspired.gif"
            width="160" height="160" alt="Animated paperclip">
     </div>
@@ -35,9 +35,11 @@
   </header>
 
   <main id="rooms">
-    <!-- HOME: replace the bracketed text only with Benny's supplied copy. -->
+    <!-- HOME: these three paragraphs are Benny's supplied text verbatim. -->
     <section id="home" class="room" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
-      <div class="home-text">[HOME PAGE WELCOME TEXT NEEDED FROM BENNY]</div>
+      <div class="home-text"><p>Hello, welcome to my corner of the internet.</p>
+        <p>A place to escape the big tech feudal overlords.</p>
+        <p>Here you will find games, music, films I make, general musings, and whatever else I deem worthy of the World Wide Web.</p></div>
       <!-- VISITOR COUNTER: visual placeholder only. No counting endpoint,
            analytics, cookies, fake total or third-party request exists. -->
       <div class="visitor-counter">
@@ -76,7 +78,7 @@
           <p class="keyboard-help">3D: WASD + mouse<br>− / +: detail</p>
         </aside>
       </div>
-      <p class="canard-text">[CANARD TEXT NEEDED FROM BENNY]</p>
+      <p class="canard-text">Inspired by a game I've long forgotten and been unable to find. I decided to make it myself...</p>
       </div>
     </section>
 
@@ -90,14 +92,14 @@
         <audio id="song" controls preload="none" aria-label="groovy town">
           <source src="music/groovy-town.mp3" type="audio/mpeg">
         </audio>
-        <p>[MUSIC TEXT NEEDED FROM BENNY]</p>
+        <p>My only attempt at electronic music.</p>
         <!-- Artwork/credits/lyrics locations can be added when supplied. -->
       </div>
     </section>
 
     <!-- MESSAGE BOARD: only a placeholder. No form, API or database. -->
     <section id="message-board" class="room" role="tabpanel" aria-labelledby="board-tab" tabindex="0" hidden>
-      <div class="board-text">[MESSAGE BOARD COMING-SOON TEXT NEEDED FROM BENNY]</div>
+      <div class="board-text">Coming soon. Once I'm sure you can't prompt-injection hack me here.</div>
     </section>
   </main>
 </body>

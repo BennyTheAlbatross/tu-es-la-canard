@@ -7,7 +7,7 @@ in the development workspace's design-review directory.
 ## Approved paperclip animation
 
 - File: `images/header/paperclip-inspired.gif`
-- Purpose: header mascot for H-boonar's Web Corner.
+- Purpose: header mascot for H Boonar's Web Corner.
 - Provenance: original AI-generated paperclip-inspired frame sheet, created
   using the built-in image generation tool on 6 October 2026. Four frames
   assembled into a transparent looping GIF using Pillow.
@@ -17,7 +17,7 @@ in the development workspace's design-review directory.
 - Licensing classification: generated original asset, not borrowed artwork.
   No public-domain or third-party open-source licence is asserted. This is
   not a downloaded Microsoft Clippy asset.
-- Status: approved asset stored locally; not yet connected to the wrapper.
+- Status: approved asset stored locally; connected to the header.
 
 When editing the header, reference this file relative to `web/index.html`:
 `images/header/paperclip-inspired.gif`. Preserve its animation. A still
@@ -32,13 +32,13 @@ alternative for reduced-motion visitors has not yet been approved.
 - Conversion details: see `music/README.md`.
 - Status: prepared locally, not deployed.
 
-## Room textures (local review)
+## Approved room textures
 
 Original AI-generated textures derived from Benny’s selected candidate styles on 6 October 2026. No external artwork borrowed; no public-domain or third-party licence asserted. Generated source images retained outside the repository in design-review. Web copies resized to at most 512 pixels per edge to keep downloads small.
 
 - `images/canard/duck-skulls.png`: selected B1 pixel duck skulls.
 - `images/music/emerald-marble.png`: selected C2 emerald marble.
 - `images/message-board/navy-stipple.png`: selected E3 navy stipple.
-- `images/home/blue-bubbles.png`: D2 revised at Benny’s request to larger obvious blue bubbles; final preview awaiting approval. Also used behind the header as requested.
+- `images/home/blue-bubbles.png`: D2 revised at Benny’s request to larger obvious blue bubbles; revised bubble preview approved by Benny. Also used behind the header as requested.
 
-All files are local. These repeat using CSS; generator-proposed seamlessness is not a pixel-exact guarantee. No texture has yet been deployed.
+All files are local. These repeat using CSS; generator-proposed seamlessness is not a pixel-exact guarantee. All four textures are approved for deployment.
