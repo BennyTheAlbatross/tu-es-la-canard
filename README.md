@@ -145,8 +145,9 @@ Choose a level, then play the same CSV map in either the 2D or ray-cast mode.
 
 Raising the torch increases visibility, slows the duck, and makes every demon
 1.5x faster. Nearby hidden doors are permanently opened when revealed. One-way
-gate arrows show the direction the duck may travel. Map 5 is a complete puzzle
-level demonstrating gates, a hidden torch door, demons, and collapsing floors.
+gate arrows show the direction the duck may travel. The Tutorial (stored as
+`map5.csv`) is a complete puzzle level demonstrating gates, a hidden torch
+door, demons, and collapsing floors.
 
 ## Map editor
 

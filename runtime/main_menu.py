@@ -21,6 +21,9 @@ from rules import browser
 import subprocess
 
 MAPS_DIR = os.path.join(PROJECT_DIR, 'maps', 'game')
+MAP_DISPLAY_NAMES = {
+    'map5': 'Tutorial',
+}
 
 # setup pygame windows
 pygame.init()
@@ -64,7 +67,8 @@ def list_maps():
         except OSError:
             has_spawn = False
         if has_spawn:
-            display = os.path.splitext(name)[0]
+            stem = os.path.splitext(name)[0]
+            display = MAP_DISPLAY_NAMES.get(stem.lower(), stem)
             maps.append((display, full_path))
     return maps
 
