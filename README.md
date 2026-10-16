@@ -148,6 +148,16 @@ python3 runtime/main_menu.py
 
 Choose a level, then play the same CSV map in either the 2D or ray-cast mode.
 
+## Gameplay screenshots
+
+### Classic 2D dungeon
+
+![Tu es la Canard 2D gameplay](docs/screenshots/2d-gameplay.png)
+
+### Ray-cast dungeon
+
+![Tu es la Canard ray-cast gameplay](docs/screenshots/raycast-gameplay.png)
+
 ### Controls
 
 - Arrow keys: move in 2D
