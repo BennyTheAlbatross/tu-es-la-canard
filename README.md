@@ -5,6 +5,18 @@ Desktop browsers offer 2D and ray-cast gameplay. Touch devices with a coarse
 pointer offer 2D with an on-screen directional pad and action buttons.
 The public build contains existing game levels, without the map editor.
 
+## Screenshots
+
+The fifth map is shown to players as **Tutorial** while retaining its stable
+`map5.csv` filename internally.
+
+![Level menu with Tutorial selected](docs/screenshots/tutorial-level-menu.png)
+
+In landscape full screen, the directional pad sits at the left edge and the
+action buttons sit at the right edge, like a handheld emulator.
+
+![Landscape full-screen controls](docs/screenshots/fullscreen-controls.png)
+
 ## Native development
 
 ```sh
