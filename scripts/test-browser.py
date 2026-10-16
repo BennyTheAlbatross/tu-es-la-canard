@@ -20,6 +20,7 @@ for _task in asyncio.all_tasks():
             if 'clock' in _locals: _item['fps']=_locals['clock'].get_fps()
             if 'map_file' in _locals: _item['map']=str(_locals['map_file'])
             if 'map_path' in _locals: _item['map']=str(_locals['map_path'])
+            if 'wall_style' in _locals: _item['wall_style']=_locals['wall_style']
             _canard_frames.append(_item)
         _coro=getattr(_coro,'cr_await',None)
 platform.window.canardProbe=json.dumps(_canard_frames)
@@ -60,7 +61,7 @@ with sync_playwright() as p:
   def key(k):
    if mobile:
     button=page.locator('[data-key="'+k+'"]');button.scroll_into_view_if_needed();box=button.bounding_box();page.touchscreen.tap(box['x']+box['width']/2,box['y']+box['height']/2)
-   else:page.keyboard.press({'enter':'Enter','up':'ArrowUp','down':'ArrowDown','escape':'Escape','torch':'Space','music':'m'}.get(k,k))
+   else:page.keyboard.press({'enter':'Enter','up':'ArrowUp','down':'ArrowDown','escape':'Escape','torch':'Space','music':'m','walls':'v'}.get(k,k))
    page.wait_for_timeout(350)
   load_seconds=time.monotonic()-started
   transfers=page.evaluate('performance.getEntriesByType("resource").map(x=>({url:x.name,encoded:x.encodedBodySize,transfer:x.transferSize}))')+f.evaluate('performance.getEntriesByType("resource").map(x=>({url:x.name,encoded:x.encodedBodySize,transfer:x.transferSize}))')
@@ -80,7 +81,10 @@ with sync_playwright() as p:
   after=next(x for x in probe() if x['function']=='main_async' and 'position' in x)
   assert after['position']!=state['position'],(label,'movement did not change position')
   key('torch');after=next(x for x in probe() if x['function']=='main_async' and 'position' in x);assert after['torch'] is True
-  page.screenshot(path=str(out/(label+'-2d.png')),full_page=not mobile)
+  assert after['wall_style']=='pseudo3d',after
+  page.screenshot(path=str(out/(label+'-2d-pseudo3d.png')),full_page=not mobile)
+  key('walls');classic=next(x for x in probe() if x['function']=='main_async' and 'position' in x);assert classic['wall_style']=='classic',classic
+  page.screenshot(path=str(out/(label+'-2d-classic.png')),full_page=not mobile)
   print(label,'2d after',after,flush=True)
   key('escape');print(label,'returned',menu(),flush=True)
   if not mobile:

@@ -11,7 +11,7 @@ _key_names = {
     "up": pygame.K_UP, "down": pygame.K_DOWN,
     "left": pygame.K_LEFT, "right": pygame.K_RIGHT,
     "enter": pygame.K_RETURN, "escape": pygame.K_ESCAPE,
-    "torch": pygame.K_SPACE, "music": pygame.K_m,
+    "torch": pygame.K_SPACE, "music": pygame.K_m, "walls": pygame.K_v,
 }
 
 

@@ -48,7 +48,7 @@ with tempfile.TemporaryDirectory(prefix="canard-", dir=BUILD) as temporary:
                "rules/objects.csv"]
     modules += [f"rules/{name}.py" for name in
                 ("browser", "sprits", "movments", "interactions", "gates",
-                 "hazards", "shaders", "music")]
+                 "hazards", "shaders", "music", "wall_rendering")]
     assets = json.loads((ROOT / "scripts/game-assets.json").read_text())
     for relative in modules + assets:
         copy_file(relative, stage)
