@@ -24,6 +24,15 @@ import rules.movments as movments
 from rules import interactions
 from rules import shaders
 from rules import music as game_music
+from rules.wall_rendering import (
+    WALL_STYLE_CLASSIC,
+    WALL_STYLE_PSEUDO3D,
+    build_wall_variant_cache,
+    iter_contact_shadows,
+    load_pseudo3d_overlays,
+    neighbour_mask,
+    normalise_wall_style,
+)
 
 
 #constants 
@@ -192,7 +201,17 @@ def build_world(object_defs, map_file):
     )
 
 
-def build_static_world_surface(world_width, world_height, background, barriers, gates, env_images, mechanic_images):
+def build_static_world_surface(
+    world_width,
+    world_height,
+    background,
+    barriers,
+    gates,
+    env_images,
+    mechanic_images,
+    wall_style=WALL_STYLE_CLASSIC,
+    wall_overlays=None,
+):
     # Pre-render static tile layers once and only draw dynamic objects every frame.
     static_world = pygame.Surface((world_width, world_height)).convert()
     static_world.fill((0, 0, 0))
@@ -206,12 +225,29 @@ def build_static_world_surface(world_width, world_height, background, barriers, 
             continue
         static_world.blit(image, (x, y))
 
+    wall_cells = set()
+    wall_variants = {}
+    if wall_style == WALL_STYLE_PSEUDO3D:
+        wall_cells, wall_variants = build_wall_variant_cache(
+            env_images, wall_overlays, barriers
+        )
+        world_columns = world_width // TILE_SIZE[0]
+        world_rows = world_height // TILE_SIZE[1]
+        for shadow_x, shadow_y, shadow_name in iter_contact_shadows(
+            wall_cells, world_columns, world_rows
+        ):
+            static_world.blit(wall_overlays[shadow_name], (shadow_x, shadow_y))
+
     for x, y, name in barriers:
         image_key = BARRIER_TILES.get(name, 'lava_tile')
         image = env_images[image_key]
         if isinstance(image, list):
             animated_tiles.append((x, y, image))
             continue
+        if wall_style == WALL_STYLE_PSEUDO3D and name in ('border', 'stone'):
+            row = y // TILE_SIZE[1]
+            column = x // TILE_SIZE[0]
+            image = wall_variants[(image_key, neighbour_mask(wall_cells, row, column))]
         static_world.blit(image, (x, y))
 
     for x, y, name in gates:
@@ -349,7 +385,7 @@ def draw_world(
         )
 
 
-def main(map_file=DEFAULT_MAP):
+def main(map_file=DEFAULT_MAP, wall_style=None):
     pygame.init()
     game_music.play()
 
@@ -360,9 +396,13 @@ def main(map_file=DEFAULT_MAP):
     torch_frames = load_torch_images()
     collapsing_floor_images = load_collapsing_floor_images()
     mechanic_images = load_mechanic_images()
+    wall_style = normalise_wall_style(
+        wall_style or os.environ.get('CANARD_WALL_STYLE', WALL_STYLE_PSEUDO3D)
+    )
 
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("Tu es le canard")
+    wall_overlays = load_pseudo3d_overlays()
 
     object_defs = load_objects()
     movments.configure_enemy_collision_rules(object_defs)
@@ -393,6 +433,8 @@ def main(map_file=DEFAULT_MAP):
         gates,
         env_images,
         mechanic_images,
+        wall_style=wall_style,
+        wall_overlays=wall_overlays,
     )
     effects = shaders.EnvironmentEffects(
         tile_map=tile_map,
@@ -424,6 +466,23 @@ def main(map_file=DEFAULT_MAP):
                 player.set_torch(not player.torch_active)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_m:
                 game_music.toggle()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_v:
+                wall_style = (
+                    WALL_STYLE_CLASSIC
+                    if wall_style == WALL_STYLE_PSEUDO3D
+                    else WALL_STYLE_PSEUDO3D
+                )
+                static_world, animated_tiles = build_static_world_surface(
+                    world_width,
+                    world_height,
+                    background,
+                    barriers,
+                    gates,
+                    env_images,
+                    mechanic_images,
+                    wall_style=wall_style,
+                    wall_overlays=wall_overlays,
+                )
 
         # Handle user input
         keys = pygame.key.get_pressed()

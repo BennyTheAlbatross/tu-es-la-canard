@@ -10,9 +10,19 @@ Choose a level, then play the same CSV map in either the 2D or ray-cast mode.
 
 ## Gameplay screenshots
 
-### Classic 2D dungeon
+### 2D wall styles
 
-![Tu es la Canard 2D gameplay](docs/screenshots/2d-gameplay.png)
+The top-down renderer defaults to neighbour-aware pseudo-3D stone walls. Press
+`V` during a 2D level to switch between the enhanced and original rendering;
+the map, collisions and lighting remain identical.
+
+| Classic | Pseudo-3D |
+| --- | --- |
+| ![Classic 2D walls on the Tutorial map](docs/screenshots/2d-walls-classic.png) | ![Pseudo-3D 2D walls at the same Tutorial camera position](docs/screenshots/2d-walls-pseudo3d.png) |
+
+Set `CANARD_WALL_STYLE=classic` before launch to start with the original style,
+or `CANARD_WALL_STYLE=pseudo3d` to start with the enhanced style. The first-person
+raycaster continues to use the original texture assets and rendering path.
 
 ### Ray-cast dungeon
 
@@ -23,6 +33,7 @@ Choose a level, then play the same CSV map in either the 2D or ray-cast mode.
 - Arrow keys: move in 2D
 - WASD / arrows / mouse: move and turn in ray-cast mode
 - Space: toggle the player's torch
+- V: switch between classic and pseudo-3D walls in 2D
 - M: toggle music
 - Enter: select menu item
 - Escape: return or quit
