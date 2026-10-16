@@ -23,7 +23,19 @@
   window.addEventListener('canard-room-change', release);
   window.addEventListener('blur', release);
   document.addEventListener('visibilitychange', () => {if(document.hidden) release();});
-  document.getElementById('fullscreen').addEventListener('click', () => {
-    document.getElementById('play-area').requestFullscreen?.(); game.contentWindow.focus();
+  const playArea = document.getElementById('play-area');
+  const fullscreenButton = document.getElementById('fullscreen');
+  fullscreenButton.addEventListener('click', async () => {
+    if (document.fullscreenElement === playArea) {
+      await document.exitFullscreen?.();
+    } else {
+      await playArea.requestFullscreen?.();
+      game.contentWindow.focus();
+    }
+  });
+  document.addEventListener('fullscreenchange', () => {
+    const active = document.fullscreenElement === playArea;
+    fullscreenButton.textContent = active ? 'Exit full screen' : 'Full screen';
+    fullscreenButton.setAttribute('aria-pressed', String(active));
   });
 })();

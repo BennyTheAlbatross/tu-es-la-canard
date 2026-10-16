@@ -87,9 +87,11 @@ emergency commands are in [deploy/OPERATIONS.md](deploy/OPERATIONS.md).
 
 ## Personal website wrapper
 
-The wrapper is a plain personal website with a rainbow “Benny’s website”
-heading and a Game tab. Its controls stay beside the game on desktop and
-phones, including full screen. Phone landscape gives the game more room.
+The wrapper is a plain personal website with a rainbow “H Boonar's Web Corner”
+heading and a Tu es la Canard tab. Controls stay beside the game in the normal
+page layout. In full screen, the directional pad sits at the left edge and the
+action buttons at the right edge, following a landscape handheld-emulator
+layout. Phone landscape gives the game more room.
 The Comic Neue heading font and its OFL license are served locally.
 
 To check the actual public Funnel path while bypassing local MagicDNS:

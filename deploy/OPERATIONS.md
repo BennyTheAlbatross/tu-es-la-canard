@@ -70,6 +70,11 @@ The script uploads into a new release directory and atomically changes
 /srv/canard/build. It restores the prior symlink if its HTTP check fails.
 Retain a previous verified release for rollback; clean old releases deliberately.
 
+The full-screen wrapper uses a handheld-emulator layout: movement controls are
+anchored to the left edge and action controls to the right edge. After wrapper
+CSS or JavaScript changes, verify both entering and leaving full screen in a
+landscape touch viewport as well as desktop keyboard input.
+
 ## Tailscale and public access
 
 Join using a dedicated tag and the tailnet administrator-approved policy.

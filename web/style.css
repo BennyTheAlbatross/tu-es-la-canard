@@ -144,10 +144,75 @@ iframe { display: block; width: 100%; aspect-ratio: 16/9; border: 1px solid #aaa
 .dpad [data-key="down"] { grid-area: 3/2; }
 .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .keyboard-help { font-size: 12px; line-height: 1.7; color: #ddd; margin: 0; }
-.play-area:fullscreen { padding: 12px; background: #160407; align-items: center; gap: 12px; }
-.play-area:fullscreen iframe { max-height: calc(100dvh - 52px); }
+.play-area:fullscreen {
+  --fullscreen-control: clamp(44px, 7vw, 64px);
+  display: block;
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  background: #050404;
+}
+.play-area:fullscreen .game-box {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.play-area:fullscreen iframe {
+  width: min(100%, calc(100dvh * 16 / 9));
+  height: auto;
+  max-height: 100%;
+}
+.play-area:fullscreen .game-controls {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+.play-area:fullscreen .touch-controls { display: contents; }
+.play-area:fullscreen .dpad {
+  position: absolute;
+  left: max(8px, env(safe-area-inset-left));
+  top: 50%;
+  width: calc(var(--fullscreen-control) * 3 + 6px);
+  grid-template-rows: repeat(3, var(--fullscreen-control));
+  transform: translateY(-50%);
+  pointer-events: auto;
+}
+.play-area:fullscreen .actions {
+  position: absolute;
+  right: max(8px, env(safe-area-inset-right));
+  top: 50%;
+  width: clamp(126px, 20vw, 184px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  transform: translateY(-50%) rotate(-8deg);
+  pointer-events: auto;
+}
+.play-area:fullscreen .actions button { transform: rotate(8deg); }
+.play-area:fullscreen .game-controls button {
+  min-height: var(--fullscreen-control);
+  color: #fff;
+  background: #161616c7;
+  border: 2px solid #ffffffb8;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px #000c;
+  font-weight: bold;
+  text-shadow: 0 1px 2px #000;
+}
+.play-area:fullscreen .game-controls button:active,
+.play-area:fullscreen .game-controls button.pressed { background: #8d2532e6; }
+.play-area:fullscreen #fullscreen {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  min-height: 40px;
+  padding: 6px 10px;
+  pointer-events: auto;
+}
 .play-area:fullscreen .keyboard-help { display: none; }
-.play-area:fullscreen .game-controls, .play-area:fullscreen .touch-controls { gap: 8px; }
 
 /* MUSIC BACKGROUND: approved C2 emerald marble, stored locally.
    Only Benny's supplied title and song are used. No invented credits/artwork. */
@@ -184,6 +249,5 @@ audio { display: block; width: 100%; max-width: 480px; }
   .canard-content { padding: 6px; }
   .play-area { grid-template-columns: minmax(0, 1fr) 138px; gap: 10px; }
   .game-controls { gap: 10px; }
-  .play-area:fullscreen { padding: 6px; gap: 6px; }
   .music-content { padding: 14px; }
 }
